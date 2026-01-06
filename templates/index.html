@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Prediksi Karir</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="spinner"></div>
+        <p class="loading-text">Sedang Menganalisa Data...</p>
+    </div>
+
+    <div class="circle circle-1"></div>
+    <div class="circle circle-2"></div>
+
+    <div class="container fade-in-up">
+        <div class="card">
+            
+            <h1 class="title">Sistem Prediksi Karir</h1>
+            <p class="subtitle">Masukkan NIP atau Nama Pegawai untuk melihat prediksi kenaikan pangkat.</p>
+
+            <div class="action-top">
+                <a href="{{ url_for('rekapan') }}" class="btn btn-green">
+                    <i class="fas fa-file-alt"></i> Lihat Rekapan Data Pegawai
+                </a>
+            </div>
+
+            <form action="/" method="POST" class="search-box">
+                <div class="input-group">
+                    <i class="fas fa-search input-icon"></i>
+                    <input type="text" name="keyword" placeholder="Cari Nama atau NIP..." required autocomplete="off">
+                </div>
+                <button type="submit" class="btn btn-blue">
+                    Cek Data <i class="fas fa-arrow-right"></i>
+                </button>
+            </form>
+
+            {% if error %}
+            <div class="alert-box slide-in">
+                <i class="fas fa-exclamation-circle"></i> {{ error }}
+            </div>
+            {% endif %}
+
+            {% if pegawai %}
+            <div class="result-section slide-in">
+                <div class="divider"></div>
+                <h3 class="result-title">Data Kepegawaian</h3>
+                
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="label">Nama Lengkap</span>
+                        <span class="value">{{ pegawai.nama }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">NIP</span>
+                        <span class="value">{{ pegawai.nip }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Unit Kerja</span>
+                        <span class="value">{{ pegawai.unit }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Pangkat Saat Ini</span>
+                        <span class="value badge">{{ pegawai.pangkat }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">TMT Terakhir</span>
+                        <span class="value">{{ pegawai.tmt }}</span>
+                    </div>
+                </div>
+
+                <div class="prediction-card">
+                    <p>Estimasi Kenaikan Pangkat:</p>
+                    <h2><i class="fas fa-chart-line"></i> {{ prediksi }}</h2>
+                </div>
+                
+                <a href="/" class="reset-link"><i class="fas fa-undo"></i> Cari Pegawai Lain</a>
+            </div>
+            {% endif %}
+
+        </div>
+    </div>
+
+    <script>
+        const searchForm = document.querySelector('.search-box');
+        const loadingOverlay = document.getElementById('loading-overlay');
+
+        if (searchForm) {
+            searchForm.addEventListener('submit', function(e) {
+                const input = this.querySelector('input[name="keyword"]');
+                // Hanya munculkan loading jika input tidak kosong
+                if (input.value.trim() !== "") {
+                    loadingOverlay.classList.add('active');
+                    const btn = this.querySelector('button');
+                    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memproses...';
+                }
+            });
+        }
+
+        // Fix: Sembunyikan loading jika user menekan tombol "Back" di browser
+        window.addEventListener("pageshow", function(event) {
+            if (event.persisted || (window.performance && window.performance.navigation.type === 2)) {
+                loadingOverlay.classList.remove('active');
+                const btn = document.querySelector('.btn-blue');
+                if(btn) btn.innerHTML = 'Cek Data <i class="fas fa-arrow-right"></i>';
+            }
+        });
+    </script>
+
+</body>
+</html>

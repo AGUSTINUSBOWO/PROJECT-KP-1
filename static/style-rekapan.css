@@ -1,0 +1,210 @@
+/* =========================================
+   STYLE-REKAPAN.CSS (FULL VERSION)
+   ========================================= */
+
+/* 1. GLOBAL STYLES & RESET */
+body { 
+    font-family: 'Poppins', 'Segoe UI', sans-serif;
+    background-color: #f0f2f5;
+    margin: 0; 
+    padding: 0;
+    color: #333;
+}
+
+.container { 
+    max-width: 1200px; 
+    margin: 30px auto; 
+    padding: 0 20px;
+}
+
+/* 2. HEADER SECTION */
+header {
+    margin-bottom: 25px;
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+}
+
+.header-content {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.back-link { 
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none; 
+    color: #555; 
+    font-weight: 500; 
+    font-size: 14px; 
+    transition: color 0.3s;
+}
+
+.back-link:hover { color: #007bff; }
+
+.title-section h2 { margin: 0; color: #2c3e50; font-size: 24px; }
+.title-section .subtitle { margin: 5px 0 0; color: #6c757d; font-size: 14px; }
+
+/* 3. TABS NAVIGATION */
+.tabs-wrapper { 
+    overflow-x: auto; 
+    white-space: nowrap; 
+    padding-bottom: 5px; 
+    margin-bottom: 20px;
+    scrollbar-width: thin; 
+}
+
+.tabs-wrapper::-webkit-scrollbar { height: 6px; }
+.tabs-wrapper::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
+
+.tabs { display: flex; gap: 8px; }
+
+.tabs button {
+    background: white;
+    border: 1px solid #e0e0e0;
+    padding: 10px 20px;
+    cursor: pointer;
+    border-radius: 50px;
+    font-weight: 500;
+    font-family: 'Poppins', sans-serif;
+    color: #555;
+    transition: all 0.3s ease;
+    font-size: 13px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.tabs button:hover {
+    background: #f8f9fa;
+    border-color: #bbb;
+    transform: translateY(-2px);
+}
+
+.tabs button.active {
+    background: linear-gradient(135deg, #007bff, #0056b3);
+    color: white;
+    border-color: transparent;
+    box-shadow: 0 4px 10px rgba(0, 123, 255, 0.3);
+}
+
+/* 4. DATA TABLE */
+.table-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+    overflow: hidden;
+    position: relative;
+}
+
+.table-responsive {
+    overflow-x: auto;
+    max-height: 70vh;
+}
+
+table { 
+    width: 100%; 
+    border-collapse: collapse; 
+    font-size: 13px; 
+    min-width: 800px;
+}
+
+th { 
+    background-color: #34495e;
+    color: white; 
+    font-weight: 500;
+    padding: 15px;
+    text-align: left;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    letter-spacing: 0.5px;
+}
+
+td { 
+    padding: 12px 15px; 
+    border-bottom: 1px solid #eee;
+    color: #333;
+    vertical-align: middle;
+}
+
+tbody tr:nth-child(even) { background-color: #f8f9fa; }
+tbody tr:hover { background-color: #e3f2fd; transition: background 0.2s; }
+
+.text-center { text-align: center; }
+
+/* 5. LOADING ANIMATION (FINAL FIX) */
+.loading-overlay {
+    /* Mengunci posisi layar penuh */
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;  /* Wajib pakai vw agar full width */
+    height: 100vh; /* Wajib pakai vh agar full height */
+    
+    background: rgba(255, 255, 255, 0.95);
+    z-index: 99999;
+    
+    /* Flexbox Center: Ini yang membuat spinner ke tengah */
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important; /* Tengah Vertikal */
+    align-items: center !important;     /* Tengah Horizontal */
+    
+    backdrop-filter: blur(5px);
+    transition: opacity 0.5s ease, visibility 0.5s ease;
+    
+    /* Default terlihat */
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Class ini dipakai JS untuk menyembunyikan loader */
+.loading-overlay.hidden {
+    opacity: 0;
+    visibility: hidden;
+}
+
+.spinner {
+    width: 50px;
+    height: 50px;
+    border: 5px solid #f3f3f3;
+    border-top: 5px solid #007bff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 20px;
+}
+
+.loading-overlay p {
+    color: #555;
+    font-weight: 600;
+    font-size: 16px;
+    margin: 0;
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+@keyframes pulse {
+    0% { opacity: 0.6; }
+    50% { opacity: 1; }
+    100% { opacity: 0.6; }
+}
+
+/* Footer & Responsive */
+.footer-note {
+    text-align: center;
+    margin-top: 30px;
+    font-size: 12px;
+    color: #999;
+}
+
+@media (max-width: 600px) {
+    .container { padding: 0 10px; margin-top: 15px; }
+    header { padding: 15px; }
+    .title-section h2 { font-size: 20px; }
+}

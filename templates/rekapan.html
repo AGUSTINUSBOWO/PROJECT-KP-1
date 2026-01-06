@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rekapan Data Pegawai</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="{{ url_for('static', filename='style-rekapan.css') }}">
+</head>
+<body>
+
+    <div id="loading" class="loading-overlay">
+        <div class="spinner"></div>
+        <p>Sedang memuat data...</p>
+    </div>
+
+    <div class="container">
+        <header>
+            <div class="header-content">
+                <a href="{{ url_for('index') }}" class="back-link">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                        <path fill-rule="evenodd" d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8z"/>
+                    </svg>
+                    Kembali ke Prediksi
+                </a>
+                <div class="title-section">
+                    <h2>Rekapan Data Pegawai</h2>
+                    <p class="subtitle">Pilih Unit Kerja (Tab) di bawah untuk melihat data secara detail.</p>
+                </div>
+            </div>
+        </header>
+
+        <div class="tabs-wrapper">
+            <div id="tab-container" class="tabs">
+                </div>
+        </div>
+
+        <div class="table-card">
+            <div class="table-responsive">
+                <table id="data-table">
+                    <thead>
+                        <tr>
+                            <th>Nama Pegawai</th>
+                            <th>NIP</th>
+                            <th>Jabatan</th>
+                            <th>Unit Kerja</th>
+                            <th>NIK</th>
+                            <th>Profesi</th>
+                            <th>Pangkat/Gol</th>
+                            <th class="text-center">Total AK</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-body">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <div class="footer-note">
+            <p>&copy; 2024 Sistem Informasi Kepegawaian</p>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='script-rekapan.js') }}"></script>
+
+    <script>
+        window.addEventListener("load", function() {
+            const loader = document.getElementById("loading");
+            if (loader) {
+                // Tambahkan class .hidden (dari CSS) untuk efek memudar
+                loader.classList.add("hidden");
+                
+                // Hilangkan elemen sepenuhnya setelah animasi 0.5 detik selesai
+                setTimeout(() => {
+                    loader.style.display = "none";
+                }, 500);
+            }
+        });
+    </script>
+</body>
+</html>

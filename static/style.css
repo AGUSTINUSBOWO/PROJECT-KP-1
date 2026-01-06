@@ -1,0 +1,362 @@
+/* ============================
+   1. RESET & VARIABLE
+   ============================ */
+:root {
+    --primary-color: #4facfe;
+    --secondary-color: #00f2fe;
+    --accent-green: #43e97b;
+    --accent-green-dark: #38f9d7;
+    --text-dark: #2c3e50;
+    --text-light: #666;
+    --glass-bg: rgba(255, 255, 255, 0.90);
+    --glass-border: rgba(255, 255, 255, 0.5);
+    --shadow: 0 15px 35px rgba(0,0,0,0.1);
+}
+
+* {
+    margin: 0; padding: 0; box-sizing: border-box;
+}
+
+body {
+    font-family: 'Poppins', sans-serif;
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    overflow-x: hidden; 
+    position: relative;
+    color: var(--text-dark);
+}
+
+/* ============================
+   2. BACKGROUND ANIMATION
+   ============================ */
+.circle {
+    position: absolute;
+    border-radius: 50%;
+    z-index: -1;
+    filter: blur(80px);
+    animation: float 6s ease-in-out infinite;
+}
+
+.circle-1 {
+    width: 300px; height: 300px;
+    background: var(--primary-color);
+    top: -50px; left: -50px;
+    opacity: 0.6;
+}
+
+.circle-2 {
+    width: 250px; height: 250px;
+    background: var(--accent-green);
+    bottom: -50px; right: -50px;
+    animation-delay: 3s;
+    opacity: 0.6;
+}
+
+/* ============================
+   3. CONTAINER & CARD
+   ============================ */
+.container {
+    width: 100%;
+    max-width: 550px;
+    perspective: 1000px;
+}
+
+.card {
+    background: var(--glass-bg);
+    padding: 40px;
+    border-radius: 20px;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(10px);
+    text-align: center;
+    transition: transform 0.3s;
+}
+
+/* ============================
+   4. TYPOGRAPHY
+   ============================ */
+.title {
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 10px;
+    background: linear-gradient(to right, #0052D4, #4364F7, #6FB1FC);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.subtitle {
+    color: var(--text-light);
+    font-size: 14px;
+    margin-bottom: 25px;
+    line-height: 1.6;
+}
+
+/* ============================
+   5. BUTTONS & INPUTS
+   ============================ */
+.action-top { margin-bottom: 30px; }
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 25px;
+    border: none;
+    border-radius: 50px;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+}
+
+/* Tombol Hijau */
+.btn-green {
+    background: linear-gradient(45deg, #11998e, #38ef7d);
+    color: white;
+}
+
+/* Tombol Biru */
+.btn-blue {
+    background: linear-gradient(45deg, #0052D4, #4364F7);
+    color: white;
+    width: 100%;
+    margin-top: 15px;
+    font-size: 16px;
+    padding: 14px;
+}
+
+/* Input Form */
+.input-group {
+    position: relative;
+    margin-bottom: 10px;
+}
+
+.input-icon {
+    position: absolute;
+    left: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #aaa;
+}
+
+.search-box input {
+    width: 100%;
+    padding: 16px 16px 16px 50px;
+    border: 2px solid #eee;
+    border-radius: 12px;
+    font-size: 15px;
+    font-family: 'Poppins', sans-serif;
+    outline: none;
+    transition: all 0.3s;
+    background: #f9f9f9;
+}
+
+.search-box input:focus {
+    border-color: #4364F7;
+    background: white;
+    box-shadow: 0 0 0 4px rgba(67, 100, 247, 0.1);
+}
+
+/* ============================
+   6. RESULT SECTION STYLES
+   ============================ */
+.result-section {
+    margin-top: 30px;
+    text-align: left;
+}
+
+.divider {
+    height: 1px;
+    background: #eee;
+    margin: 20px 0;
+}
+
+.result-title {
+    font-size: 18px;
+    color: var(--text-dark);
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+.info-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.info-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px dashed #eee;
+    padding-bottom: 8px;
+}
+
+.info-item .label {
+    font-size: 13px;
+    color: #888;
+}
+
+.info-item .value {
+    font-weight: 600;
+    color: #333;
+    font-size: 14px;
+    text-align: right;
+}
+
+.badge {
+    background: #e3f2fd;
+    color: #1976d2;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 12px !important;
+}
+
+/* Prediction Card */
+.prediction-card {
+    background: linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%);
+    padding: 20px;
+    border-radius: 15px;
+    text-align: center;
+    margin-top: 25px;
+    color: #fff;
+    box-shadow: 0 10px 20px rgba(142, 197, 252, 0.3);
+}
+
+.prediction-card p {
+    margin: 0;
+    font-size: 13px;
+    opacity: 0.9;
+}
+
+.prediction-card h2 {
+    margin: 5px 0 0;
+    font-size: 24px;
+    font-weight: 700;
+}
+
+.alert-box {
+    background: #ffeceb;
+    color: #e74c3c;
+    padding: 15px;
+    border-radius: 10px;
+    margin-top: 20px;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-left: 5px solid #e74c3c;
+}
+
+.reset-link {
+    display: block;
+    text-align: center;
+    margin-top: 20px;
+    color: #888;
+    text-decoration: none;
+    font-size: 13px;
+    transition: color 0.3s;
+}
+
+.reset-link:hover { color: #4364F7; }
+
+/* ============================
+   7. ANIMATIONS
+   ============================ */
+.fade-in-up {
+    animation: fadeInUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(40px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.slide-in {
+    animation: slideIn 0.5s ease-out forwards;
+}
+
+@keyframes slideIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-20px); }
+}
+
+@media (max-width: 480px) {
+    .card { padding: 30px 20px; }
+    .title { font-size: 24px; }
+    .circle { display: none; }
+}
+
+/* ============================
+   8. LOADING OVERLAY (BARU)
+   ============================ */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.85); /* Background transparan */
+    z-index: 9999;
+    
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(5px);
+}
+
+.loading-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.spinner {
+    width: 50px;
+    height: 50px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #4facfe; /* Biru Utama */
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 15px;
+}
+
+.loading-text {
+    font-family: 'Poppins', sans-serif;
+    color: #555;
+    font-weight: 600;
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+@keyframes pulse {
+    0% { opacity: 0.6; }
+    50% { opacity: 1; }
+    100% { opacity: 0.6; }
+}
