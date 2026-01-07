@@ -212,7 +212,6 @@ def index():
 # ========================================================
 @app.route('/rekapan')
 def rekapan():
-    # Hanya me-render HTML. Pengambilan data dilakukan oleh JS di frontend
     return render_template('rekapan.html')
 
 if __name__ == '__main__':

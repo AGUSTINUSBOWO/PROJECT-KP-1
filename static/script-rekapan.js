@@ -1,21 +1,100 @@
 // ================= KONFIGURASI =================
-// PENTING: Ganti dengan ID Spreadsheet Anda
 const SPREADSHEET_ID = '15WY6r-LWkxmBn0agPJdM7oEgkOUHZghNHxfGWATGNHM'; 
-
-// Daftar Nama Tab sesuai Spreadsheet Anda
 const SHEET_TABS = [
     "DN1", "DN2", "GK1", "GK2", "GM", "GT", "JT", "KG1", "KG2", 
     "KT", "MJ", "MG", "NG", "PA", "UH1", "UH2", "TR", "WB", 
     "Labkes", "DINKES", "RSUD", "RSP"
 ];
 
+// Variabel Global untuk menyimpan data mentah sheet aktif
+let CURRENT_SHEET_DATA = [];
+let ACTIVE_TAB = SHEET_TABS[0];
+
 // ================= INITIALIZATION =================
 document.addEventListener('DOMContentLoaded', () => {
     generateTabs();
-    loadSheetData(SHEET_TABS[0]); // Load tab pertama
+    setupFilters(); // Siapkan isi dropdown
+    setupEventListeners(); // Siapkan listener search & filter
+    loadSheetData(SHEET_TABS[0]); // Load awal
 });
 
-// 1. Fungsi Membuat Tombol Tab
+// 1. Setup Data Dropdown (Sesuai Request)
+function setupFilters() {
+    const jabatanOpts = `
+        <optgroup label="Jabatan Struktural">
+            <option value="JPT Utama">JPT Utama</option>
+            <option value="JPT Madya">JPT Madya</option>
+            <option value="JPT Pratama">JPT Pratama</option>
+            <option value="Administrator">Administrator</option>
+            <option value="Pengawas">Pengawas</option>
+        </optgroup>
+        <optgroup label="Jabatan Fungsional">
+            <option value="Ahli Pertama">Ahli Pertama</option>
+            <option value="Ahli Muda">Ahli Muda</option>
+            <option value="Ahli Madya">Ahli Madya</option>
+            <option value="Ahli Utama">Ahli Utama</option>
+            <option value="Pemula">Pemula</option>
+            <option value="Terampil">Terampil</option>
+            <option value="Mahir">Mahir</option>
+            <option value="Penyelia">Penyelia</option>
+        </optgroup>
+        <optgroup label="Jabatan Pelaksana">
+            <option value="Pengadministrasi">Pengadministrasi Umum</option>
+            <option value="Pengolah Data">Pengolah Data</option>
+            <option value="Pengelola Keuangan">Pengelola Keuangan</option>
+            <option value="Pranata Kearsipan">Pranata Kearsipan</option>
+            <option value="Pengelola Barang">Pengelola Barang Milik Negara</option>
+            <option value="Pengelola Layanan">Pengelola Layanan Operasional</option>
+            <option value="Petugas Pelayanan">Petugas Pelayanan</option>
+        </optgroup>
+    `;
+
+    const pangkatOpts = `
+        <optgroup label="Golongan II (Pengatur)">
+            <option value="II/a">Pengatur Muda, II/a</option>
+            <option value="II/b">Pengatur Muda Tk.I, II/b</option>
+            <option value="II/c">Pengatur, II/c</option>
+            <option value="II/d">Pengatur Tk.I, II/d</option>
+        </optgroup>
+        <optgroup label="Golongan III (Penata)">
+            <option value="III/a">Penata Muda, III/a</option>
+            <option value="III/b">Penata Muda Tk.I, III/b</option>
+            <option value="III/c">Penata, III/c</option>
+            <option value="III/d">Penata Tk.I, III/d</option>
+        </optgroup>
+        <optgroup label="Golongan IV (Pembina)">
+            <option value="IV/a">Pembina, IV/a</option>
+            <option value="IV/b">Pembina Tk.I, IV/b</option>
+            <option value="IV/c">Pembina Utama Muda, IV/c</option>
+            <option value="IV/d">Pembina Utama Madya, IV/d</option>
+            <option value="IV/e">Pembina Utama, IV/e</option>
+        </optgroup>
+    `;
+
+    const profesiList = [
+        "Dokter", "Dokter Spesialis", "Dokter Subspesialis", "Dokter Gigi", "Dokter Gigi Spesialis",
+        "Bidan", "Perawat", "Apoteker", "Asisten Apoteker", "Perawat Gigi", "Nutrisionis", "Dietisien",
+        "Sanitarian", "Epidemiolog Kesehatan", "Penyuluh Kesehatan Masyarakat", "Adminkes", "PKM",
+        "Pranata Laboratorium Kesehatan", "Radiografer", "Teknisi Elektromedis", "Fisikawan Medis",
+        "Penata Anestesi", "Teknisi Transfusi Darah", "Fisioterapis", "Okupasi Terapis", "Terapis Wicara",
+        "Psikolog Klinis", "Perekam Medis", "Teknisi Gigi"
+    ];
+    let profesiOpts = "";
+    profesiList.forEach(p => { profesiOpts += `<option value="${p}">${p}</option>`; });
+
+    document.getElementById('filterJabatan').insertAdjacentHTML('beforeend', jabatanOpts);
+    document.getElementById('filterPangkat').insertAdjacentHTML('beforeend', pangkatOpts);
+    document.getElementById('filterProfesi').insertAdjacentHTML('beforeend', profesiOpts);
+}
+
+// 2. Event Listeners untuk Search & Filter
+function setupEventListeners() {
+    const inputs = ['globalSearch', 'filterJabatan', 'filterPangkat', 'filterProfesi'];
+    inputs.forEach(id => {
+        document.getElementById(id).addEventListener('input', applyLogicAndRender);
+    });
+}
+
 function generateTabs() {
     const container = document.getElementById('tab-container');
     SHEET_TABS.forEach((sheetName, index) => {
@@ -24,6 +103,14 @@ function generateTabs() {
         btn.onclick = () => {
             document.querySelectorAll('.tabs button').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
+            ACTIVE_TAB = sheetName;
+            
+            // Reset Filters saat ganti tab
+            document.getElementById('globalSearch').value = '';
+            document.getElementById('filterJabatan').value = '';
+            document.getElementById('filterPangkat').value = '';
+            document.getElementById('filterProfesi').value = '';
+
             loadSheetData(sheetName);
         };
         if (index === 0) btn.classList.add('active');
@@ -31,13 +118,11 @@ function generateTabs() {
     });
 }
 
-// 2. Fungsi Mengambil Data dari Google Sheets
+// 3. Load Data & Normalisasi
 async function loadSheetData(sheetName) {
-    const tableBody = document.getElementById('table-body');
     const loading = document.getElementById('loading');
-    
-    tableBody.innerHTML = '';
-    loading.style.display = 'block';
+    loading.classList.remove('hidden'); // Tampilkan loading
+    loading.style.display = 'flex';
 
     const url = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheetName)}`;
 
@@ -47,104 +132,160 @@ async function loadSheetData(sheetName) {
         const jsonText = text.substring(47).slice(0, -2);
         const json = JSON.parse(jsonText);
         
-        renderTable(json.table.rows, json.table.cols, sheetName);
+        // --- PROSES DATA MENTAH MENJADI OBJECT BERSIH ---
+        CURRENT_SHEET_DATA = normalizeData(json.table.rows, json.table.cols, sheetName);
+        
+        // Render Awal
+        applyLogicAndRender();
         
     } catch (error) {
         console.error('Error fetching data:', error);
-        tableBody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:red;">Gagal mengambil data tab ${sheetName}.</td></tr>`;
+        document.getElementById('table-body').innerHTML = `<tr><td colspan="8" class="text-center" style="color:red;">Gagal mengambil data.</td></tr>`;
     } finally {
-        loading.style.display = 'none';
+        setTimeout(() => {
+            loading.classList.add('hidden'); // Sembunyikan loading
+        }, 300);
     }
 }
 
-// 3. Fungsi Render Tabel (LOGIKA MENIRU APP.PY)
-function renderTable(rows, cols, sheetName) {
-    const tableBody = document.getElementById('table-body');
-
-    // Mapping kolom lain tetap menggunakan pencarian Header
-    // KECUALI Unit Kerja (kita pakai logika khusus di bawah)
-    const columnMap = {
-        nama:    findColumnIndex(cols, ["nama", "name"]),
-        nip:     findColumnIndex(cols, ["nip"]),
+// Fungsi Mengubah Data Mentah GVIZ menjadi Array Object
+function normalizeData(rows, cols, sheetName) {
+    const colIdx = {
+        nama: findColumnIndex(cols, ["nama", "name"]),
+        nip: findColumnIndex(cols, ["nip"]),
         jabatan: findColumnIndex(cols, ["jabatan"]),
-        // Unit kerja DIHAPUS dari sini, kita pakai logika hardcode
-        nik:     findColumnIndex(cols, ["nik"]),
+        nik: findColumnIndex(cols, ["nik"]),
         profesi: findColumnIndex(cols, ["profesi"]),
-        pangkat: findColumnIndex(cols, ["pangkat", "golongan"]), 
-        total:   findColumnIndex(cols, ["total"])
+        pangkat: findColumnIndex(cols, ["pangkat", "golongan"]),
+        total: findColumnIndex(cols, ["total"])
     };
 
-    // --- LOGIKA 1: TENTUKAN UNIT KERJA BERDASARKAN NAMA SHEET (Persis app.py) ---
+    // Logika Unit Kerja (Sama seperti sebelumnya)
     let fixedUnitName = null;
-    const sheetLower = sheetName.toLowerCase();
+    const sLower = sheetName.toLowerCase();
+    if (sLower.includes('dinkes') || sLower.includes('dinas')) fixedUnitName = "Dinas Kesehatan";
+    else if (sLower.includes('lab')) fixedUnitName = "Labkesmas";
+    else if (sLower.includes('rsud')) fixedUnitName = "RSUD";
+    else if (sLower.includes('rsp') || sLower.includes('pratama')) fixedUnitName = "RS Pratama";
 
-    if (sheetLower.includes('dinkes') || sheetLower.includes('dinas')) {
-        fixedUnitName = "Dinas Kesehatan";
-    } else if (sheetLower.includes('lab') || sheetLower.includes('labkes')) {
-        fixedUnitName = "Laboratorium Kesehatan Masyarakat";
-    } else if (sheetLower.includes('rsud')) {
-        fixedUnitName = "RSUD";
-    } else if (sheetLower.includes('rsp') || sheetLower.includes('pratama')) {
-        fixedUnitName = "RS Pratama";
-    }
-    // Jika bukan instansi khusus, fixedUnitName tetap null -> Nanti ambil kolom B
-    // --------------------------------------------------------------------------
+    return rows.map(row => {
+        const c = row.c;
+        if (!c) return null;
 
-    rows.forEach(row => {
-        const c = row.c; 
-        if (!c) return;
-
-        // --- LOGIKA 2: FINALISASI UNIT KERJA ---
-        let displayUnit = "-";
-
-        if (fixedUnitName) {
-            // Skenario 1: Instansi Khusus (RSUD, Dinkes, dll)
-            displayUnit = fixedUnitName;
-        } else {
-            // Skenario 2: Puskesmas / Lainnya
-            // Ambil dari KOLOM KEDUA (Index 1 / Kolom B)
-            // c[1] artinya kolom B (karena index mulai dari 0=A, 1=B)
-            if (c[1]) {
-                displayUnit = c[1].v || c[1].f || sheetName; 
-            } else {
-                displayUnit = sheetName; // Fallback ke nama sheet jika kolom B kosong
-            }
+        let unit = fixedUnitName;
+        if (!unit) {
+            unit = (c[1]) ? (c[1].v || c[1].f || sheetName) : sheetName;
         }
 
-        // --- Perbaikan Angka Total AK (Desimal) ---
-        let valTotal = getRawVal(c, columnMap.total);
+        let valTotal = getRawVal(c, colIdx.total);
         if (valTotal !== '-' && !isNaN(parseFloat(valTotal))) {
             valTotal = parseFloat(valTotal).toFixed(3);
-            valTotal = parseFloat(valTotal); 
         }
 
+        return {
+            nama: getRawVal(c, colIdx.nama),
+            nip: getRawVal(c, colIdx.nip),
+            jabatan: getRawVal(c, colIdx.jabatan),
+            unit: unit,
+            nik: getRawVal(c, colIdx.nik),
+            profesi: getRawVal(c, colIdx.profesi),
+            pangkat: getRawVal(c, colIdx.pangkat),
+            total: valTotal,
+            // Simpan versi lowercase untuk searching cepat
+            _searchStr: (getRawVal(c, colIdx.nama) + " " + getRawVal(c, colIdx.nip)).toLowerCase()
+        };
+    }).filter(item => item !== null); // Hapus baris null
+}
+
+// 4. LOGIKA FILTERING & SEARCHING (INTI FITUR BARU)
+function applyLogicAndRender() {
+    const searchKey = document.getElementById('globalSearch').value.toLowerCase().trim();
+    const filterJabatan = document.getElementById('filterJabatan').value.toLowerCase();
+    const filterPangkat = document.getElementById('filterPangkat').value.toLowerCase();
+    const filterProfesi = document.getElementById('filterProfesi').value.toLowerCase();
+
+    // A. FILTERING TAHAP 1 (STRICT FILTER)
+    // Saring data berdasarkan Dropdown. Jika tidak cocok, buang.
+    let filteredData = CURRENT_SHEET_DATA.filter(item => {
+        const matchJabatan = filterJabatan === "" || item.jabatan.toLowerCase().includes(filterJabatan);
+        const matchPangkat = filterPangkat === "" || item.pangkat.toLowerCase().includes(filterPangkat);
+        const matchProfesi = filterProfesi === "" || item.profesi.toLowerCase().includes(filterProfesi);
+        return matchJabatan && matchPangkat && matchProfesi;
+    });
+
+    // B. SEARCHING TAHAP 2 (REORDERING & HIGHLIGHT)
+    // Jika ada keyword search, jangan dibuang, tapi pindahkan yang cocok ke atas.
+    let finalData = [];
+    
+    if (searchKey !== "") {
+        const matches = [];
+        const nonMatches = [];
+
+        filteredData.forEach(item => {
+            if (item._searchStr.includes(searchKey)) {
+                // Tandai sebagai match untuk CSS
+                item.isHighlight = true;
+                matches.push(item);
+            } else {
+                item.isHighlight = false;
+                nonMatches.push(item);
+            }
+        });
+
+        // Gabungkan: Match duluan, baru sisanya
+        finalData = [...matches, ...nonMatches];
+    } else {
+        // Jika tidak ada search, reset highlight
+        finalData = filteredData.map(item => ({ ...item, isHighlight: false }));
+    }
+
+    renderTableDOM(finalData);
+}
+
+// 5. Render ke HTML
+function renderTableDOM(data) {
+    const tableBody = document.getElementById('table-body');
+    const footerInfo = document.getElementById('footerInfo');
+    tableBody.innerHTML = '';
+
+    if (data.length === 0) {
+        tableBody.innerHTML = `<tr><td colspan="8" class="text-center" style="padding:20px;">Data tidak ditemukan sesuai filter.</td></tr>`;
+        footerInfo.innerText = "0 Data";
+        return;
+    }
+
+    data.forEach(item => {
         const tr = document.createElement('tr');
+        
+        // Tambahkan class highlight jika hasil search
+        if (item.isHighlight) {
+            tr.classList.add('highlight-row');
+        }
+
         tr.innerHTML = `
-            <td>${getRawVal(c, columnMap.nama)}</td>
-            <td>${getRawVal(c, columnMap.nip)}</td>
-            <td>${getRawVal(c, columnMap.jabatan)}</td>
-            <td>${displayUnit}</td> <td>${getRawVal(c, columnMap.nik)}</td>
-            <td>${getRawVal(c, columnMap.profesi)}</td>
-            <td>${getRawVal(c, columnMap.pangkat)}</td>
-            <td style="font-weight:bold; color: #007bff;">${valTotal}</td>
+            <td>${item.nama}</td>
+            <td>${item.nip}</td>
+            <td>${item.jabatan}</td>
+            <td>${item.unit}</td>
+            <td>${item.nik}</td>
+            <td>${item.profesi}</td>
+            <td>${item.pangkat}</td>
+            <td style="font-weight:bold; color: #007bff; text-align:center;">${item.total}</td>
         `;
         tableBody.appendChild(tr);
     });
-    
-    if(rows.length === 0) {
-         tableBody.innerHTML = `<tr><td colspan="8" style="text-align:center;">Data kosong di sheet ini.</td></tr>`;
-    }
+
+    footerInfo.innerText = `Menampilkan ${data.length} Data Pegawai`;
 }
 
-// Helper ambil nilai
+// Helper Utils
 function getRawVal(c, idx) {
     if (idx !== -1 && c[idx]) {
-        return c[idx].v !== null ? c[idx].v : (c[idx].f || '-');
+        return c[idx].v !== null ? String(c[idx].v) : (c[idx].f || '-');
     }
     return '-';
 }
 
-// Fungsi Cari Index Kolom
 function findColumnIndex(cols, keywords) {
     return cols.findIndex(col => {
         if (!col || !col.label) return false;
