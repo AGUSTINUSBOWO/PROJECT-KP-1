@@ -5,113 +5,116 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistem Prediksi Karir</title>
     
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
 
-    <div id="loading-overlay" class="loading-overlay">
-        <div class="spinner"></div>
-        <p class="loading-text">Sedang Menganalisa Data...</p>
+    <div class="background-shapes">
+        <div class="shape shape-1"></div>
+        <div class="shape shape-2"></div>
+        <div class="shape shape-3"></div>
     </div>
 
-    <div class="circle circle-1"></div>
-    <div class="circle circle-2"></div>
-
-    <div class="container fade-in-up">
-        <div class="card">
+    <div class="main-container fade-in-up">
+        
+        <div class="glass-card" id="mainCard">
             
-            <h1 class="title">Sistem Prediksi Karir</h1>
-            <p class="subtitle">Masukkan NIP atau Nama Pegawai untuk melihat prediksi kenaikan pangkat.</p>
-
-            <div class="action-top">
-                <a href="{{ url_for('rekapan') }}" class="btn btn-green">
-                    <i class="fas fa-file-alt"></i> Lihat Rekapan Data Pegawai
-                </a>
+            <div class="card-header">
+                <div class="logo-icon pulse-anim">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <h1>Sistem Prediksi Karir</h1>
+                <p>Masukkan NIP atau Nama Pegawai untuk melihat analisis data dan estimasi kenaikan pangkat.</p>
             </div>
 
-            <form action="/" method="POST" class="search-box">
-                <div class="input-group">
-                    <i class="fas fa-search input-icon"></i>
-                    <input type="text" name="keyword" placeholder="Cari Nama atau NIP..." required autocomplete="off">
+            <div id="searchView" class="view-section active">
+                
+                <div class="nav-buttons">
+                    <a href="{{ url_for('rekapan') }}" class="btn-pill btn-secondary hover-lift">
+                        <i class="fas fa-table"></i> Data Pegawai
+                    </a>
+                    <a href="{{ url_for('statistik') }}" class="btn-pill btn-outline hover-lift"> 
+                        <i class="fas fa-chart-pie"></i> Statistik
+                    </a>
                 </div>
-                <button type="submit" class="btn btn-blue">
-                    Cek Data <i class="fas fa-arrow-right"></i>
+
+                <div class="input-group focus-ring">
+                    <i class="fas fa-search search-icon"></i>
+                    <input type="text" id="searchInput" placeholder="Cari Nama atau NIP..." autocomplete="off">
+                </div>
+
+                <button onclick="searchEmployee()" class="btn-primary btn-block hover-lift" id="btnSearch">
+                    <span>Cek Data Sekarang</span>
+                    <i class="fas fa-arrow-right float-anim"></i>
                 </button>
-            </form>
-
-            {% if error %}
-            <div class="alert-box slide-in">
-                <i class="fas fa-exclamation-circle"></i> {{ error }}
-            </div>
-            {% endif %}
-
-            {% if pegawai %}
-            <div class="result-section slide-in">
-                <div class="divider"></div>
-                <h3 class="result-title">Data Kepegawaian</h3>
                 
+                <div id="loadingStatus" class="loading-status hidden">
+                    <i class="fas fa-sync fa-spin"></i> Menyinkronkan data terbaru...
+                </div>
+            </div>
+
+            <div id="loadingView" class="view-section hidden fade-in">
+                <div class="spinner-container">
+                    <div class="spinner-modern"></div>
+                    <p>Sedang Menganalisa Data...</p>
+                </div>
+            </div>
+
+            <div id="resultView" class="view-section hidden fade-in-up-short">
+                <div class="result-header">
+                    <div class="avatar-placeholder pulse-anim-slow">
+                        <i class="fas fa-user-check"></i>
+                    </div>
+                    <h2 id="resNama">Nama Pegawai</h2>
+                    <span class="badge-nip" id="resNip">NIP</span>
+                </div>
+
                 <div class="info-grid">
-                    <div class="info-item">
-                        <span class="label">Nama Lengkap</span>
-                        <span class="value">{{ pegawai.nama }}</span>
+                    <div class="info-item pop-in" style="animation-delay: 0.1s;">
+                        <label>Jabatan</label>
+                        <p id="resJabatan">-</p>
                     </div>
-                    <div class="info-item">
-                        <span class="label">NIP</span>
-                        <span class="value">{{ pegawai.nip }}</span>
+                    <div class="info-item pop-in" style="animation-delay: 0.2s;">
+                        <label>Unit Kerja</label>
+                        <p id="resUnit">-</p>
                     </div>
-                    <div class="info-item">
-                        <span class="label">Unit Kerja</span>
-                        <span class="value">{{ pegawai.unit }}</span>
+                    <div class="info-item pop-in" style="animation-delay: 0.3s;">
+                        <label>Pangkat Saat Ini</label>
+                        <p id="resPangkat">-</p>
                     </div>
-                    <div class="info-item">
-                        <span class="label">Pangkat Saat Ini</span>
-                        <span class="value badge">{{ pegawai.pangkat }}</span>
+                    <div class="info-item highlight pop-in" style="animation-delay: 0.4s;">
+                        <label>Total Angka Kredit</label>
+                        <p id="resAK">0</p>
                     </div>
-                    <div class="info-item">
-                        <span class="label">TMT Terakhir</span>
-                        <span class="value">{{ pegawai.tmt }}</span>
+                    <div class="info-item full-width pop-in" style="animation-delay: 0.5s;">
+                        <label>TMT Terakhir</label>
+                        <p id="resTMT">-</p>
                     </div>
                 </div>
 
-                <div class="prediction-card">
-                    <p>Estimasi Kenaikan Pangkat:</p>
-                    <h2><i class="fas fa-chart-line"></i> {{ prediksi }}</h2>
+                <div class="estimation-box pop-in" style="animation-delay: 0.6s;">
+                    <div class="est-content">
+                        <p>Estimasi Periode Kenaikan Pangkat:</p>
+                        <h3 id="resEstimasi"><i class="far fa-calendar-alt"></i> -</h3>
+                        <small>*Syarat: Memenuhi Angka Kredit sesuai Jenjang</small>
+                    </div>
+                    <i class="fas fa-rocket rocket-icon float-anim"></i>
                 </div>
-                
-                <a href="/" class="reset-link"><i class="fas fa-undo"></i> Cari Pegawai Lain</a>
+
+                <button onclick="resetView()" class="btn-text">
+                    <i class="fas fa-undo"></i> Cari Pegawai Lain
+                </button>
             </div>
-            {% endif %}
 
         </div>
+        
+        <footer class="footer-simple">
+            &copy; 2026 Instansi Pemerintah &bull; Kepegawaian
+        </footer>
     </div>
 
-    <script>
-        const searchForm = document.querySelector('.search-box');
-        const loadingOverlay = document.getElementById('loading-overlay');
-
-        if (searchForm) {
-            searchForm.addEventListener('submit', function(e) {
-                const input = this.querySelector('input[name="keyword"]');
-                // Hanya munculkan loading jika input tidak kosong
-                if (input.value.trim() !== "") {
-                    loadingOverlay.classList.add('active');
-                    const btn = this.querySelector('button');
-                    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memproses...';
-                }
-            });
-        }
-
-        // Fix: Sembunyikan loading jika user menekan tombol "Back" di browser
-        window.addEventListener("pageshow", function(event) {
-            if (event.persisted || (window.performance && window.performance.navigation.type === 2)) {
-                loadingOverlay.classList.remove('active');
-                const btn = document.querySelector('.btn-blue');
-                if(btn) btn.innerHTML = 'Cek Data <i class="fas fa-arrow-right"></i>';
-            }
-        });
-    </script>
-
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>

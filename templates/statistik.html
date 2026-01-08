@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Statistik Kinerja Pegawai</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+    
+    <link rel="stylesheet" href="{{ url_for('static', filename='style-statistik.css') }}">
+</head>
+<body>
+
+    <div id="loading" class="loading-overlay">
+        <div class="spinner"></div>
+        <p>Sinkronisasi Data Spreadsheet...</p>
+    </div>
+
+    <div class="container">
+        
+        <header class="modern-header">
+            <div class="header-text">
+                <h2><i class="fas fa-chart-line"></i> Dashboard Statistik</h2>
+                <p>Visualisasi Data Real-time & Analisis Kinerja</p>
+            </div>
+
+            <div class="header-actions">
+                <a href="{{ url_for('index') }}" class="btn-nav btn-secondary">
+                    <i class="fas fa-home"></i>
+                    <span>Beranda</span>
+                </a>
+
+                <a href="{{ url_for('rekapan') }}" class="btn-nav btn-primary">
+                    <div class="icon-box">
+                        <i class="fas fa-table"></i>
+                    </div>
+                    <span>Lihat Data Tabel</span>
+                    <i class="fas fa-arrow-right arrow-indicator"></i>
+                </a>
+            </div>
+        </header>
+
+        <div class="filter-bar">
+            <div class="filter-label">
+                <i class="fas fa-filter"></i> Filter Data Tahun:
+            </div>
+            <div class="select-wrapper">
+                <select id="yearFilter">
+                    <option value="">Memuat Tahun...</option>
+                </select>
+            </div>
+            <div class="last-update" id="totalDataInfo">
+                Memuat total pegawai...
+            </div>
+        </div>
+
+        <div class="charts-grid">
+            
+            <div class="chart-card wide-card">
+                <div class="card-header card-header-flex">
+                    <div class="header-title">
+                        <h3><i class="fas fa-trophy"></i> Top 5 Angka Kredit Tertinggi</h3>
+                        <p>Peringkat pegawai dengan AK tertinggi.</p>
+                    </div>
+                    <div class="header-filter">
+                        <select id="unitFilterTop5" class="mini-select">
+                            <option value="ALL">-- Semua Unit --</option>
+                            </select>
+                    </div>
+                </div>
+                <div class="chart-body">
+                    <canvas id="topFiveChart"></canvas>
+                </div>
+            </div>
+
+            <div class="chart-card wide-card">
+                <div class="card-header">
+                    <h3><i class="fas fa-building"></i> Rata-rata AK per Unit Kerja (Tab)</h3>
+                    <p>Perbandingan kinerja rata-rata antar unit pada tahun terpilih.</p>
+                </div>
+                <div class="chart-body">
+                    <canvas id="unitChart"></canvas>
+                </div>
+            </div>
+
+            <div class="chart-card">
+                <div class="card-header">
+                    <h3><i class="fas fa-briefcase"></i> Sebaran Jabatan</h3>
+                    <p>Komposisi jabatan (Real Data).</p>
+                </div>
+                <div class="chart-body">
+                    <canvas id="jabatanChart"></canvas>
+                </div>
+            </div>
+
+            <div class="chart-card">
+                <div class="card-header">
+                    <h3><i class="fas fa-chart-area"></i> Tren Kenaikan AK Instansi</h3>
+                    <p>Rata-rata AK seluruh pegawai dari tahun ke tahun.</p>
+                </div>
+                <div class="chart-body">
+                    <canvas id="trendChart"></canvas>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="footer-note">
+            <p>&copy; 2025 Sistem Informasi Kepegawaian - Terintegrasi Google Sheets</p>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='script-statistik.js') }}"></script>
+</body>
+</html>

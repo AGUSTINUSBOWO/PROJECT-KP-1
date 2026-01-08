@@ -6,20 +6,20 @@ const SHEET_TABS = [
     "Labkes", "DINKES", "RSUD", "RSP"
 ];
 
-// Variabel Global untuk menyimpan data mentah sheet aktif
 let CURRENT_SHEET_DATA = [];
+let DETECTED_YEARS = []; // Menyimpan tahun yang ditemukan (misal: 2023, 2024)
 let ACTIVE_TAB = SHEET_TABS[0];
 
 // ================= INITIALIZATION =================
 document.addEventListener('DOMContentLoaded', () => {
     generateTabs();
-    setupFilters(); // Siapkan isi dropdown
-    setupEventListeners(); // Siapkan listener search & filter
-    loadSheetData(SHEET_TABS[0]); // Load awal
+    setupFilters(); 
+    setupEventListeners(); 
+    loadSheetData(SHEET_TABS[0]); 
 });
 
-// 1. Setup Data Dropdown (Sesuai Request)
 function setupFilters() {
+    // 1. Dropdown Jabatan (Lengkap sesuai request sebelumnya)
     const jabatanOpts = `
         <optgroup label="Jabatan Struktural">
             <option value="JPT Utama">JPT Utama</option>
@@ -39,45 +39,42 @@ function setupFilters() {
             <option value="Penyelia">Penyelia</option>
         </optgroup>
         <optgroup label="Jabatan Pelaksana">
-            <option value="Pengadministrasi">Pengadministrasi Umum</option>
+            <option value="Pengadministrasi">Pengadministrasi</option>
             <option value="Pengolah Data">Pengolah Data</option>
-            <option value="Pengelola Keuangan">Pengelola Keuangan</option>
-            <option value="Pranata Kearsipan">Pranata Kearsipan</option>
-            <option value="Pengelola Barang">Pengelola Barang Milik Negara</option>
-            <option value="Pengelola Layanan">Pengelola Layanan Operasional</option>
-            <option value="Petugas Pelayanan">Petugas Pelayanan</option>
+            <option value="Pengelola">Pengelola</option>
+            <option value="Pranata">Pranata</option>
+            <option value="Petugas">Petugas</option>
         </optgroup>
     `;
 
+    // 2. Dropdown Pangkat
     const pangkatOpts = `
-        <optgroup label="Golongan II (Pengatur)">
-            <option value="II/a">Pengatur Muda, II/a</option>
-            <option value="II/b">Pengatur Muda Tk.I, II/b</option>
-            <option value="II/c">Pengatur, II/c</option>
-            <option value="II/d">Pengatur Tk.I, II/d</option>
+        <optgroup label="Golongan II">
+            <option value="II/a">II/a - Pengatur Muda</option>
+            <option value="II/b">II/b - Pengatur Muda Tk.I</option>
+            <option value="II/c">II/c - Pengatur</option>
+            <option value="II/d">II/d - Pengatur Tk.I</option>
         </optgroup>
-        <optgroup label="Golongan III (Penata)">
-            <option value="III/a">Penata Muda, III/a</option>
-            <option value="III/b">Penata Muda Tk.I, III/b</option>
-            <option value="III/c">Penata, III/c</option>
-            <option value="III/d">Penata Tk.I, III/d</option>
+        <optgroup label="Golongan III">
+            <option value="III/a">III/a - Penata Muda</option>
+            <option value="III/b">III/b - Penata Muda Tk.I</option>
+            <option value="III/c">III/c - Penata</option>
+            <option value="III/d">III/d - Penata Tk.I</option>
         </optgroup>
-        <optgroup label="Golongan IV (Pembina)">
-            <option value="IV/a">Pembina, IV/a</option>
-            <option value="IV/b">Pembina Tk.I, IV/b</option>
-            <option value="IV/c">Pembina Utama Muda, IV/c</option>
-            <option value="IV/d">Pembina Utama Madya, IV/d</option>
-            <option value="IV/e">Pembina Utama, IV/e</option>
+        <optgroup label="Golongan IV">
+            <option value="IV/a">IV/a - Pembina</option>
+            <option value="IV/b">IV/b - Pembina Tk.I</option>
+            <option value="IV/c">IV/c - Pembina Utama Muda</option>
+            <option value="IV/d">IV/d - Pembina Utama Madya</option>
+            <option value="IV/e">IV/e - Pembina Utama</option>
         </optgroup>
     `;
 
+    // 3. Dropdown Profesi
     const profesiList = [
-        "Dokter", "Dokter Spesialis", "Dokter Subspesialis", "Dokter Gigi", "Dokter Gigi Spesialis",
-        "Bidan", "Perawat", "Apoteker", "Asisten Apoteker", "Perawat Gigi", "Nutrisionis", "Dietisien",
-        "Sanitarian", "Epidemiolog Kesehatan", "Penyuluh Kesehatan Masyarakat", "Adminkes", "PKM",
-        "Pranata Laboratorium Kesehatan", "Radiografer", "Teknisi Elektromedis", "Fisikawan Medis",
-        "Penata Anestesi", "Teknisi Transfusi Darah", "Fisioterapis", "Okupasi Terapis", "Terapis Wicara",
-        "Psikolog Klinis", "Perekam Medis", "Teknisi Gigi"
+        "Dokter", "Dokter Spesialis", "Dokter Gigi", "Bidan", "Perawat", "Apoteker", "Asisten Apoteker",
+        "Nutrisionis", "Sanitarian", "Epidemiolog", "Penyuluh", "Adminkes", "Pranata Lab", 
+        "Radiografer", "Fisioterapis", "Perekam Medis", "Teknisi Elektromedis"
     ];
     let profesiOpts = "";
     profesiList.forEach(p => { profesiOpts += `<option value="${p}">${p}</option>`; });
@@ -87,11 +84,12 @@ function setupFilters() {
     document.getElementById('filterProfesi').insertAdjacentHTML('beforeend', profesiOpts);
 }
 
-// 2. Event Listeners untuk Search & Filter
 function setupEventListeners() {
-    const inputs = ['globalSearch', 'filterJabatan', 'filterPangkat', 'filterProfesi'];
+    // Tambahkan 'filterTahun' ke listener agar tabel berubah saat tahun diganti
+    const inputs = ['globalSearch', 'filterJabatan', 'filterPangkat', 'filterProfesi', 'filterTahun'];
     inputs.forEach(id => {
-        document.getElementById(id).addEventListener('input', applyLogicAndRender);
+        const el = document.getElementById(id);
+        if(el) el.addEventListener('input', applyLogicAndRender);
     });
 }
 
@@ -105,12 +103,12 @@ function generateTabs() {
             btn.classList.add('active');
             ACTIVE_TAB = sheetName;
             
-            // Reset Filters saat ganti tab
+            // Reset Filters saat pindah tab
             document.getElementById('globalSearch').value = '';
             document.getElementById('filterJabatan').value = '';
             document.getElementById('filterPangkat').value = '';
             document.getElementById('filterProfesi').value = '';
-
+            
             loadSheetData(sheetName);
         };
         if (index === 0) btn.classList.add('active');
@@ -118,10 +116,11 @@ function generateTabs() {
     });
 }
 
-// 3. Load Data & Normalisasi
+// ================= LOGIKA INTI (DYNAMIC COLUMN & RENDERING) =================
+
 async function loadSheetData(sheetName) {
     const loading = document.getElementById('loading');
-    loading.classList.remove('hidden'); // Tampilkan loading
+    loading.classList.remove('hidden'); 
     loading.style.display = 'flex';
 
     const url = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheetName)}`;
@@ -132,35 +131,62 @@ async function loadSheetData(sheetName) {
         const jsonText = text.substring(47).slice(0, -2);
         const json = JSON.parse(jsonText);
         
-        // --- PROSES DATA MENTAH MENJADI OBJECT BERSIH ---
-        CURRENT_SHEET_DATA = normalizeData(json.table.rows, json.table.cols, sheetName);
-        
-        // Render Awal
+        // 1. Deteksi Kolom & Normalisasi Data
+        const normalized = normalizeData(json.table.rows, json.table.cols, sheetName);
+        CURRENT_SHEET_DATA = normalized.data;
+        DETECTED_YEARS = normalized.years; // List tahun yang ditemukan (misal: ['2024', '2023'])
+
+        // 2. Isi Dropdown Tahun berdasarkan kolom yang ditemukan
+        populateYearDropdown(DETECTED_YEARS);
+
+        // 3. Render Tabel
         applyLogicAndRender();
         
     } catch (error) {
         console.error('Error fetching data:', error);
-        document.getElementById('table-body').innerHTML = `<tr><td colspan="8" class="text-center" style="color:red;">Gagal mengambil data.</td></tr>`;
+        document.getElementById('table-body').innerHTML = `<tr><td colspan="8" class="text-center" style="color:red; padding:20px;">Gagal mengambil data atau Sheet kosong.</td></tr>`;
     } finally {
-        setTimeout(() => {
-            loading.classList.add('hidden'); // Sembunyikan loading
-        }, 300);
+        setTimeout(() => { loading.classList.add('hidden'); }, 300);
     }
 }
 
-// Fungsi Mengubah Data Mentah GVIZ menjadi Array Object
 function normalizeData(rows, cols, sheetName) {
+    // A. Cari Index Kolom Standar
     const colIdx = {
         nama: findColumnIndex(cols, ["nama", "name"]),
         nip: findColumnIndex(cols, ["nip"]),
-        jabatan: findColumnIndex(cols, ["jabatan"]),
+        jabatan: findColumnIndex(cols, ["jabatan", "posisi"]),
         nik: findColumnIndex(cols, ["nik"]),
         profesi: findColumnIndex(cols, ["profesi"]),
         pangkat: findColumnIndex(cols, ["pangkat", "golongan"]),
-        total: findColumnIndex(cols, ["total"])
     };
 
-    // Logika Unit Kerja (Sama seperti sebelumnya)
+    // B. Cari Index Kolom AK per Tahun (Logic Baru)
+    // Mencari header yang mengandung "AK" dan "20xx"
+    // Contoh Header Valid: "AK 2023", "Total AK 2024", "Capaian AK Tahun 2022"
+    let akYearMap = {}; // Map: { "2023": 7, "2024": 8 } (Tahun -> Index Kolom)
+    let foundYears = [];
+
+    cols.forEach((col, index) => {
+        if (col && col.label) {
+            const label = col.label.toLowerCase();
+            // Regex: Mencari 4 digit angka (tahun) yang didahului atau diikuti kata "ak"/"total"
+            // Sederhananya: Jika ada 'ak' atau 'total' DAN ada angka '20xx'
+            const hasKeyword = label.includes("ak") || label.includes("total") || label.includes("jumlah");
+            const matchYear = label.match(/(\d{4})/); // Cari 4 digit angka
+
+            if (hasKeyword && matchYear) {
+                const year = matchYear[1]; // Ambil tahunnya (misal "2023")
+                akYearMap[year] = index;
+                if (!foundYears.includes(year)) foundYears.push(year);
+            }
+        }
+    });
+
+    // Urutkan tahun dari terbaru (Descending: 2024, 2023, 2022)
+    foundYears.sort((a, b) => b - a);
+
+    // C. Logic Unit Kerja
     let fixedUnitName = null;
     const sLower = sheetName.toLowerCase();
     if (sLower.includes('dinkes') || sLower.includes('dinas')) fixedUnitName = "Dinas Kesehatan";
@@ -168,19 +194,31 @@ function normalizeData(rows, cols, sheetName) {
     else if (sLower.includes('rsud')) fixedUnitName = "RSUD";
     else if (sLower.includes('rsp') || sLower.includes('pratama')) fixedUnitName = "RS Pratama";
 
-    return rows.map(row => {
+    // D. Map Data Baris
+    const data = rows.map(row => {
         const c = row.c;
         if (!c) return null;
 
-        let unit = fixedUnitName;
-        if (!unit) {
-            unit = (c[1]) ? (c[1].v || c[1].f || sheetName) : sheetName;
-        }
+        let unit = fixedUnitName || ((c[1]) ? (c[1].v || c[1].f || sheetName) : sheetName);
 
-        let valTotal = getRawVal(c, colIdx.total);
-        if (valTotal !== '-' && !isNaN(parseFloat(valTotal))) {
-            valTotal = parseFloat(valTotal).toFixed(3);
-        }
+        // Ambil SEMUA nilai AK berdasarkan tahun yang ditemukan
+        let akValues = {};
+        foundYears.forEach(year => {
+            const idx = akYearMap[year];
+            let rawVal = getRawVal(c, idx);
+            
+            // Bersihkan format angka (100,50 -> 100.50) untuk kalkulasi
+            // Hapus huruf, simpan angka, titik, koma, minus
+            let cleanVal = rawVal.replace(/[^\d.,-]/g, '').replace(',', '.');
+            let floatVal = parseFloat(cleanVal);
+            
+            // Simpan sebagai string terformat (3 desimal) atau strip jika kosong
+            if (!isNaN(floatVal)) {
+                akValues[year] = floatVal.toFixed(3);
+            } else {
+                akValues[year] = "-";
+            }
+        });
 
         return {
             nama: getRawVal(c, colIdx.nama),
@@ -190,22 +228,49 @@ function normalizeData(rows, cols, sheetName) {
             nik: getRawVal(c, colIdx.nik),
             profesi: getRawVal(c, colIdx.profesi),
             pangkat: getRawVal(c, colIdx.pangkat),
-            total: valTotal,
-            // Simpan versi lowercase untuk searching cepat
+            akData: akValues, // Object berisi { "2023": "10.500", "2024": "15.000" }
             _searchStr: (getRawVal(c, colIdx.nama) + " " + getRawVal(c, colIdx.nip)).toLowerCase()
         };
-    }).filter(item => item !== null); // Hapus baris null
+    }).filter(item => item !== null);
+
+    return { data, years: foundYears };
 }
 
-// 4. LOGIKA FILTERING & SEARCHING (INTI FITUR BARU)
+function populateYearDropdown(years) {
+    const select = document.getElementById('filterTahun');
+    if (!select) return;
+
+    select.innerHTML = ''; // Kosongkan dulu
+    
+    if (years.length === 0) {
+        const opt = document.createElement('option');
+        opt.text = "Data Kosong";
+        opt.value = "";
+        select.add(opt);
+        return;
+    }
+
+    // Masukkan Tahun yang ditemukan ke dropdown
+    years.forEach((year, index) => {
+        const opt = document.createElement('option');
+        opt.value = year;
+        opt.text = `Tahun ${year}`;
+        // Set default ke tahun terbaru (index 0)
+        if (index === 0) opt.selected = true; 
+        select.add(opt);
+    });
+}
+
 function applyLogicAndRender() {
     const searchKey = document.getElementById('globalSearch').value.toLowerCase().trim();
     const filterJabatan = document.getElementById('filterJabatan').value.toLowerCase();
     const filterPangkat = document.getElementById('filterPangkat').value.toLowerCase();
     const filterProfesi = document.getElementById('filterProfesi').value.toLowerCase();
+    
+    // Ambil tahun yang sedang dipilih user di dropdown
+    const selectedYear = document.getElementById('filterTahun').value; 
 
-    // A. FILTERING TAHAP 1 (STRICT FILTER)
-    // Saring data berdasarkan Dropdown. Jika tidak cocok, buang.
+    // Filter Baris Data
     let filteredData = CURRENT_SHEET_DATA.filter(item => {
         const matchJabatan = filterJabatan === "" || item.jabatan.toLowerCase().includes(filterJabatan);
         const matchPangkat = filterPangkat === "" || item.pangkat.toLowerCase().includes(filterPangkat);
@@ -213,17 +278,12 @@ function applyLogicAndRender() {
         return matchJabatan && matchPangkat && matchProfesi;
     });
 
-    // B. SEARCHING TAHAP 2 (REORDERING & HIGHLIGHT)
-    // Jika ada keyword search, jangan dibuang, tapi pindahkan yang cocok ke atas.
+    // Searching Logic
     let finalData = [];
-    
     if (searchKey !== "") {
-        const matches = [];
-        const nonMatches = [];
-
+        const matches = [], nonMatches = [];
         filteredData.forEach(item => {
             if (item._searchStr.includes(searchKey)) {
-                // Tandai sebagai match untuk CSS
                 item.isHighlight = true;
                 matches.push(item);
             } else {
@@ -231,35 +291,34 @@ function applyLogicAndRender() {
                 nonMatches.push(item);
             }
         });
-
-        // Gabungkan: Match duluan, baru sisanya
         finalData = [...matches, ...nonMatches];
     } else {
-        // Jika tidak ada search, reset highlight
         finalData = filteredData.map(item => ({ ...item, isHighlight: false }));
     }
 
-    renderTableDOM(finalData);
+    renderTableDOM(finalData, selectedYear);
 }
 
-// 5. Render ke HTML
-function renderTableDOM(data) {
+function renderTableDOM(data, selectedYear) {
     const tableBody = document.getElementById('table-body');
     const footerInfo = document.getElementById('footerInfo');
     tableBody.innerHTML = '';
 
     if (data.length === 0) {
-        tableBody.innerHTML = `<tr><td colspan="8" class="text-center" style="padding:20px;">Data tidak ditemukan sesuai filter.</td></tr>`;
+        tableBody.innerHTML = `<tr><td colspan="8" class="text-center" style="padding:20px;">Data tidak ditemukan.</td></tr>`;
         footerInfo.innerText = "0 Data";
         return;
     }
 
     data.forEach(item => {
         const tr = document.createElement('tr');
-        
-        // Tambahkan class highlight jika hasil search
-        if (item.isHighlight) {
-            tr.classList.add('highlight-row');
+        if (item.isHighlight) tr.classList.add('highlight-row');
+
+        // AMBIL NILAI AK BERDASARKAN TAHUN YANG DIPILIH
+        // Jika tahun tidak dipilih atau data kosong, tampilkan strip
+        let displayAK = "-";
+        if (selectedYear && item.akData && item.akData[selectedYear]) {
+            displayAK = item.akData[selectedYear];
         }
 
         tr.innerHTML = `
@@ -270,15 +329,19 @@ function renderTableDOM(data) {
             <td>${item.nik}</td>
             <td>${item.profesi}</td>
             <td>${item.pangkat}</td>
-            <td style="font-weight:bold; color: #007bff; text-align:center;">${item.total}</td>
+            <td style="font-weight:bold; color: #007bff; text-align:center;">
+                ${displayAK}
+            </td>
         `;
         tableBody.appendChild(tr);
     });
-
-    footerInfo.innerText = `Menampilkan ${data.length} Data Pegawai`;
+    
+    // Update footer text
+    const periodeText = selectedYear ? `(Periode ${selectedYear})` : "";
+    footerInfo.innerText = `Menampilkan ${data.length} Data Pegawai ${periodeText}`;
 }
 
-// Helper Utils
+// Utils Helper
 function getRawVal(c, idx) {
     if (idx !== -1 && c[idx]) {
         return c[idx].v !== null ? String(c[idx].v) : (c[idx].f || '-');
