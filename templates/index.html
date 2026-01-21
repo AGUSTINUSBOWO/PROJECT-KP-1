@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistem Prediksi Karir</title>
+    <title>Sistem Prediksi Karir - SIMKARIR</title>
     
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -11,107 +11,168 @@
 </head>
 <body>
 
+     <div class="menu-toggle" onclick="toggleSidebar()">
+        <i class="fas fa-bars"></i>
+    </div>
+
+    <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h3>Menu Navigasi</h3>
+            <span class="close-btn" onclick="toggleSidebar()">&times;</span>
+        </div>
+        <ul class="sidebar-list">
+            <li><a href="{{ url_for('index') }}"class="active"><i class="fas fa-home"></i> Beranda</a></li>
+            <li><a href="{{ url_for('rekapan') }}" ><i class="fas fa-database"></i> Rekapan Pegawai</a></li>
+            <li><a href="{{ url_for('statistik') }}"><i class="fas fa-chart-pie"></i> Dashboard Statistik</a></li>
+        </ul>
+    </div> 
+
+    <div id="welcomeScreen" class="welcome-overlay">
+        <div class="glow-bg"></div>
+        <div class="welcome-content-center">
+            <div class="logos-wrapper fade-in-zoom">
+                <div class="logo-box hover-float">
+                    <img src="{{ url_for('static', filename='images/logo_pemkot.jpg') }}" alt="Pemkot" class="logo-img">
+                </div>
+                <div class="logo-divider"></div>
+                <div class="logo-box hover-float" style="animation-delay: 0.1s;">
+                    <img src="{{ url_for('static', filename='images/logo_provinsi.png') }}" alt="Provinsi" class="logo-img">
+                </div>
+            </div>
+            <div class="text-wrapper fade-in-up">
+                <h1 class="main-title">SIMKARIR</h1>
+                <p class="sub-title">Sistem Informasi Manajemen Karir</p>
+                <div class="tagline-box">
+                    <span class="tagline-text">“Prediksi Karir & Kenaikan Pangkat Pegawai”</span>
+                </div>
+            </div>
+            <div class="loader-area">
+                <div class="progress-bar-track">
+                    <div class="progress-bar-fill"></div>
+                </div>
+                <p class="loading-text">Menghubungkan ke Database Live...</p>
+            </div>
+        </div>
+    </div>
+
     <div class="background-shapes">
         <div class="shape shape-1"></div>
         <div class="shape shape-2"></div>
         <div class="shape shape-3"></div>
     </div>
 
-    <div class="main-container fade-in-up">
-        
-        <div class="glass-card" id="mainCard">
+    <div class="main-container fade-in-up hidden-initially" id="mainAppContent">
+        <div class="glass-dashboard" id="mainCard">
             
-            <div class="card-header">
-                <div class="logo-icon pulse-anim">
-                    <i class="fas fa-chart-line"></i>
+            <div class="dashboard-header">
+                <div class="header-content">
+                    <div class="logo-icon pulse-anim">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <div>
+                        <h1>Dashboard Prediksi Karir</h1>
+                        <p>Analisis Data Real-time & Kalkulasi Angka Kredit</p>
+                    </div>
                 </div>
-                <h1>Sistem Prediksi Karir</h1>
-                <p>Masukkan NIP atau Nama Pegawai untuk melihat analisis data dan estimasi kenaikan pangkat.</p>
+                <div class="header-decoration">
+                    <i class="fas fa-user-tie"></i>
+                </div>
             </div>
 
             <div id="searchView" class="view-section active">
-                
-                <div class="nav-buttons">
-                    <a href="{{ url_for('rekapan') }}" class="btn-pill btn-secondary hover-lift">
-                        <i class="fas fa-table"></i> Data Pegawai
-                    </a>
-                    <a href="{{ url_for('statistik') }}" class="btn-pill btn-outline hover-lift"> 
-                        <i class="fas fa-chart-pie"></i> Statistik
-                    </a>
-                </div>
-
-                <div class="input-group focus-ring">
-                    <i class="fas fa-search search-icon"></i>
-                    <input type="text" id="searchInput" placeholder="Cari Nama atau NIP..." autocomplete="off">
-                </div>
-
-                <button onclick="searchEmployee()" class="btn-primary btn-block hover-lift" id="btnSearch">
-                    <span>Cek Data Sekarang</span>
-                    <i class="fas fa-arrow-right float-anim"></i>
-                </button>
-                
-                <div id="loadingStatus" class="loading-status hidden">
-                    <i class="fas fa-sync fa-spin"></i> Menyinkronkan data terbaru...
+                <div class="search-container">
+                    <div class="input-group focus-ring">
+                        <i class="fas fa-search search-icon"></i>
+                        <input type="text" id="searchInput" placeholder="Ketik Nama atau NIP Pegawai..." autocomplete="off">
+                    </div>
+                    <button onclick="searchEmployee()" class="btn-primary hover-lift" id="btnSearch">
+                        <span>Analisis Data Pegawai</span>
+                        <i class="fas fa-arrow-right float-anim"></i>
+                    </button>
+                    <div id="loadingStatus" class="loading-status hidden">
+                        <div class="spinner-mini"></div> Sinkronisasi Database...
+                    </div>
                 </div>
             </div>
 
             <div id="loadingView" class="view-section hidden fade-in">
                 <div class="spinner-container">
                     <div class="spinner-modern"></div>
-                    <p>Sedang Menganalisa Data...</p>
+                    <p class="loading-label">Sedang Menghitung AK & TMT...</p>
+                    <p class="loading-sub">Mohon tunggu sebentar</p>
                 </div>
             </div>
 
             <div id="resultView" class="view-section hidden fade-in-up-short">
-                <div class="result-header">
-                    <div class="avatar-placeholder pulse-anim-slow">
-                        <i class="fas fa-user-check"></i>
+                
+                <div class="profile-header">
+                    <div class="profile-left">
+                        <div class="avatar-box">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <div>
+                            <h2 id="resNama">Nama Pegawai</h2>
+                            <div class="badges-row">
+                                <span class="badge-nip" id="resNip">NIP</span>
+                                <span class="badge-unit" id="resUnit">Unit Kerja</span>
+                            </div>
+                        </div>
                     </div>
-                    <h2 id="resNama">Nama Pegawai</h2>
-                    <span class="badge-nip" id="resNip">NIP</span>
+                    <button onclick="resetView()" class="btn-reset">
+                        <i class="fas fa-undo-alt"></i> Cari Lain
+                    </button>
                 </div>
 
-                <div class="info-grid">
-                    <div class="info-item pop-in" style="animation-delay: 0.1s;">
-                        <label>Jabatan</label>
+                <div class="dashboard-grid">
+                    <div class="info-card pop-in" style="animation-delay: 0.1s;">
+                        <div class="card-icon blue"><i class="fas fa-briefcase"></i></div>
+                        <label>Jabatan Saat Ini</label>
                         <p id="resJabatan">-</p>
                     </div>
-                    <div class="info-item pop-in" style="animation-delay: 0.2s;">
-                        <label>Unit Kerja</label>
-                        <p id="resUnit">-</p>
-                    </div>
-                    <div class="info-item pop-in" style="animation-delay: 0.3s;">
-                        <label>Pangkat Saat Ini</label>
+                    <div class="info-card pop-in" style="animation-delay: 0.2s;">
+                        <div class="card-icon purple"><i class="fas fa-medal"></i></div>
+                        <label>Pangkat / Golongan</label>
                         <p id="resPangkat">-</p>
                     </div>
-                    <div class="info-item highlight pop-in" style="animation-delay: 0.4s;">
-                        <label>Total Angka Kredit</label>
-                        <p id="resAK">0</p>
-                    </div>
-                    <div class="info-item full-width pop-in" style="animation-delay: 0.5s;">
-                        <label>TMT Terakhir</label>
-                        <p id="resTMT">-</p>
+                    <div class="info-card highlight pop-in" style="animation-delay: 0.3s;">
+                        <div class="card-icon orange"><i class="fas fa-star"></i></div>
+                        <label>Total Angka Kredit (Live)</label>
+                        <p id="resAK" class="big-number">0</p>
                     </div>
                 </div>
 
-                <div class="estimation-box pop-in" style="animation-delay: 0.6s;">
-                    <div class="est-content">
-                        <p>Estimasi Periode Kenaikan Pangkat:</p>
-                        <h3 id="resEstimasi"><i class="far fa-calendar-alt"></i> -</h3>
-                        <small>*Syarat: Memenuhi Angka Kredit sesuai Jenjang</small>
+                <div class="tmt-grid pop-in" style="animation-delay: 0.4s;">
+                    <div class="tmt-card">
+                        <div class="tmt-icon"><i class="far fa-calendar-check"></i></div>
+                        <div>
+                            <label>TMT Jabatan Terakhir</label>
+                            <h4 id="resTMTJabatan">-</h4>
+                        </div>
                     </div>
-                    <i class="fas fa-rocket rocket-icon float-anim"></i>
+                    <div class="tmt-card">
+                        <div class="tmt-icon"><i class="far fa-calendar-plus"></i></div>
+                        <div>
+                            <label>TMT Pangkat Terakhir</label>
+                            <h4 id="resTMTPangkat">-</h4>
+                        </div>
+                    </div>
                 </div>
 
-                <button onclick="resetView()" class="btn-text">
-                    <i class="fas fa-undo"></i> Cari Pegawai Lain
-                </button>
-            </div>
+                <div class="prediction-panel pop-in" style="animation-delay: 0.5s;">
+                    <div class="pred-header">
+                        <h3><i class="fas fa-rocket"></i> Hasil Prediksi Sistem</h3>
+                    </div>
+                    <div class="pred-content" id="resEstimasi">
+                        </div>
+                </div>
 
+            </div> 
         </div>
         
         <footer class="footer-simple">
-            &copy; 2026 Instansi Pemerintah &bull; Kepegawaian
+            &copy; SDMK Dinas Kesehatan Kota Yogyakarta
         </footer>
     </div>
 

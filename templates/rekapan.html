@@ -7,48 +7,68 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='style-rekapan.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body>
 
-    <div id="loading" class="loading-overlay">
-        <div class="spinner"></div>
-        <p>Sedang memuat data...</p>
+    <div id="splash-screen" class="splash-screen">
+        <div class="splash-content">
+            <div class="data-loader-anim">
+                <div class="server-box">
+                    <div class="server-light"></div>
+                    <div class="server-light"></div>
+                    <div class="server-light"></div>
+                </div>
+                <div class="data-transfer-lines">
+                    <span></span><span></span><span></span>
+                </div>
+            </div>
+            <h2 class="splash-title">DIGITAL ARSIP</h2>
+            <p class="splash-subtitle">Menyiapkan Berkas Pegawai...</p>
+        </div>
+    </div>
+
+   <div class="menu-toggle" onclick="toggleSidebar()">
+        <i class="fas fa-bars"></i>
+    </div>
+
+    <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h3>Menu Navigasi</h3>
+            <span class="close-btn" onclick="toggleSidebar()">&times;</span>
+        </div>
+        <ul class="sidebar-list">
+            <li><a href="{{ url_for('index') }}"><i class="fas fa-home"></i> Beranda</a></li>
+            <li><a href="{{ url_for('rekapan') }}" class="active"><i class="fas fa-database"></i> Rekapan Pegawai</a></li>
+            <li><a href="{{ url_for('statistik') }}"><i class="fas fa-chart-pie"></i> Dashboard Statistik</a></li>
+        </ul>
+        <div class="sidebar-footer">
+        </div>
+    </div> 
+
+    <div id="loading" class="loading-overlay hidden"> <div class="spinner"></div>
+        <p>Sedang memuat & menganalisis data...</p>
     </div>
 
     <div class="container">
         
         <header class="modern-header">
-            <div class="header-text">
-                <h2><i class="fas fa-database"></i> Database Pegawai</h2>
-                <p>Rekapan data real-time & analisis kinerja</p>
-            </div>
-
-            <div class="header-actions">
-                <a href="{{ url_for('index') }}" class="btn-nav btn-secondary">
-                    <i class="fas fa-chevron-left"></i>
-                    <span>Prediksi</span>
-                </a>
-
-                <a href="{{ url_for('statistik') }}" class="btn-nav btn-primary">
-                    <div class="icon-box">
-                        <i class="fas fa-chart-pie"></i>
-                    </div>
-                    <span>Buka Statistik</span>
-                    <i class="fas fa-arrow-right arrow-indicator"></i>
-                </a>
+            <div class="header-text" style="margin-left: 40px;"> <h2><i class="fas fa-database"></i> Database Kinerja Pegawai</h2>
+                <p>Monitoring AK Integrasi, Tahunan & Kesiapan Kenaikan</p>
             </div>
         </header>
 
         <div class="search-container-floating">
             <div class="search-box">
                 <i class="fas fa-search"></i>
-                <input type="text" id="globalSearch" placeholder="Cari Nama atau NIP Pegawai...">
+                <input type="text" id="globalSearch" placeholder="Cari Nama, NIP, atau Unit Kerja...">
             </div>
         </div>
         
         <div class="tabs-wrapper">
-            <div id="tab-container" class="tabs">
-                </div>
+            <div id="tab-container" class="tabs"></div>
         </div>
 
         <div class="table-card">
@@ -56,59 +76,62 @@
                 <table id="data-table">
                     <thead>
                         <tr>
-                            <th>Nama Pegawai</th>
-                            <th>NIP</th>
+                            <th style="min-width: 280px;">Nama Pegawai</th>
+                            <th style="min-width: 150px;">NIP</th>
+                            <th style="min-width: 150px;">NIK</th>
                             
                             <th class="th-filter">
                                 <div class="th-content">
                                     <span>Jabatan</span>
-                                    <select id="filterJabatan" class="filter-select">
-                                        <option value="">Semua</option>
-                                    </select>
+                                    <select id="filterJabatan" class="filter-select"><option value="">Semua</option></select>
                                 </div>
                             </th>
 
-                            <th>Unit Kerja</th>
-                            <th>NIK</th>
-
-                            <th class="th-filter">
+                            <th class="th-filter" style="min-width: 180px;">
                                 <div class="th-content">
-                                    <span>Profesi</span>
-                                    <select id="filterProfesi" class="filter-select">
-                                        <option value="">Semua</option>
-                                    </select>
+                                    <span>Unit Kerja</span>
+                                    <select id="filterUnit" class="filter-select"><option value="">Semua Unit</option></select>
                                 </div>
                             </th>
 
                             <th class="th-filter">
                                 <div class="th-content">
                                     <span>Pangkat/Gol</span>
-                                    <select id="filterPangkat" class="filter-select">
-                                        <option value="">Semua</option>
-                                    </select>
+                                    <select id="filterPangkat" class="filter-select"></select>
                                 </div>
                             </th>
 
                             <th class="th-filter text-center" style="min-width: 130px;">
                                 <div class="th-content">
-                                    <span>Total AK (Tahun)</span>
-                                    <select id="filterTahun" class="filter-select" style="text-align: center; font-weight:bold; color: aliceblue;">
-                                        </select>
+                                    <span>Rincian AK</span>
+                                    <select id="filterTahun" class="filter-select" style="text-align:center; font-weight:bold;"></select>
+                                </div>
+                            </th>
+
+                            <th class="text-center" style="min-width: 120px; background-color: #2c3e50;">
+                                <div class="th-content">
+                                    <span>Total AK</span>
+                                    <small style="font-weight:normal; font-size:9px; color:#aaa;">(Integrasi + Tahunan)</small>
+                                </div>
+                            </th>
+
+                            <th class="th-filter" style="min-width: 220px;">
+                                <div class="th-content">
+                                    <span>Analisis Kenaikan</span>
+                                    <select id="filterKesiapan" class="filter-select">
+                                        <option value="">Semua Status</option>
+                                        <option value="Siap Naik Pangkat">Siap Naik Pangkat</option>
+                                        <option value="Siap Naik Jabatan">Siap Naik Jabatan</option>
+                                        <option value="Belum Siap">Belum Siap</option>
+                                    </select>
                                 </div>
                             </th>
                         </tr>
                     </thead>
-                    <tbody id="table-body">
-                        </tbody>
+                    <tbody id="table-body"></tbody>
                 </table>
             </div>
-            <div class="footer-info" id="footerInfo">
-                Menampilkan seluruh data
-            </div>
-        </div>
-        
-        <div class="footer-note">
-            <p>&copy; 2025 Sistem Informasi Kepegawaian</p>
+            <div class="footer-info" id="footerInfo">Memuat data...</div>
         </div>
     </div>
 

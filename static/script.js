@@ -1,93 +1,96 @@
 // ==========================================
-// KONFIGURASI SPREADSHEET
+// 1. CONFIG & RULES
 // ==========================================
-// Ganti ID ini dengan ID Google Sheet Anda yang sebenarnya
 const SPREADSHEET_ID = '15WY6r-LWkxmBn0agPJdM7oEgkOUHZghNHxfGWATGNHM'; 
 
-// Daftar nama Sheet/Tab yang akan dibaca
 const TABS = [
     "DN1", "DN2", "GK1", "GK2", "GM", "GT", "JT", "KG1", "KG2", 
     "KT", "MJ", "MG", "NG", "PA", "UH1", "UH2", "TR", "WB", 
     "Labkes", "DINKES", "RSUD", "RSP"
 ];
 
-// Variabel Global untuk menyimpan data di memori
+const CAREER_RULES = {
+    "Terampil": { targetPoint: 100, nextJenjang: "Mahir", coef: 5, isMax: false },
+    "Mahir": { targetPoint: 100, nextJenjang: "Penyelia", coef: 12.5, isMax: false },
+    "Penyelia": { isMax: true, message: "Pangkat Puncak (Mentok)", coef: 25 },
+    "Ahli Pertama": { targetPoint: 200, nextJenjang: "Ahli Muda", coef: 12.5, isMax: false },
+    "Ahli Muda": { targetPoint: 450, nextJenjang: "Ahli Madya", coef: 25, isMax: false },
+    "Ahli Madya": { targetPoint: 850, nextJenjang: "Ahli Utama", coef: 37.5, isMax: false },
+    "Ahli Utama": { isMax: true, message: "Pangkat Puncak (Mentok)", coef: 50 }
+};
+
 let cachedData = []; 
 let isDataReady = false;
 
-// ==========================================
-// 1. INITIALIZATION & CACHING STRATEGY
-// ==========================================
 document.addEventListener('DOMContentLoaded', () => {
-    // Cek apakah data sudah ada di LocalStorage (Cache Browser)
-    const localData = localStorage.getItem('pegawaiData');
-    const localTime = localStorage.getItem('pegawaiDataTime');
-    const oneHour = 60 * 60 * 1000; // Kadaluarsa dalam 1 jam
+    handleWelcomeScreen();
 
-    // Jika data ada & belum kadaluarsa, pakai data itu (Instan)
+    // Cache management (1 hour)
+    const localData = localStorage.getItem('pegawaiDataV4'); // Versi cache dinaikkan
+    const localTime = localStorage.getItem('pegawaiDataTimeV4');
+    const oneHour = 60 * 60 * 1000; 
+
     if (localData && localTime && (new Date().getTime() - localTime < oneHour)) {
         cachedData = JSON.parse(localData);
         isDataReady = true;
-        console.log("⚡ Data dimuat dari Cache (Instant Mode)");
         hideLoadingStatus();
     } else {
-        // Jika tidak ada, download di background
         fetchAllDataBackground();
     }
 
-    // Event Listener untuk tombol Enter
     const inputField = document.getElementById("searchInput");
     if(inputField) {
         inputField.addEventListener("keypress", function(event) {
-            if (event.key === "Enter") {
-                searchEmployee();
-            }
+            if (event.key === "Enter") searchEmployee();
         });
     }
 });
 
+function handleWelcomeScreen() {
+    const welcomeScreen = document.getElementById('welcomeScreen');
+    const mainContent = document.getElementById('mainAppContent');
+    setTimeout(() => {
+        if(welcomeScreen) welcomeScreen.classList.add('slide-up');
+        setTimeout(() => {
+            if(mainContent) mainContent.classList.remove('hidden-initially');
+            setTimeout(() => { 
+                if(welcomeScreen) welcomeScreen.style.display = 'none'; 
+            }, 900);
+        }, 300); 
+    }, 2500); 
+}
+
 // ==========================================
-// 2. DATA FETCHING (BACKGROUND PROCESS)
+// 2. DATA FETCHING (SMART PARSING)
 // ==========================================
 async function fetchAllDataBackground() {
     const statusDiv = document.getElementById('loadingStatus');
     if(statusDiv) statusDiv.classList.remove('hidden');
 
-    console.log("🔄 Sedang mengunduh data terbaru...");
-
     try {
-        // Fetch semua tab secara paralel (Asynchronous)
         const promises = TABS.map(tab => 
             fetch(`https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json&sheet=${tab}`)
                 .then(res => res.text())
                 .then(text => {
-                    // Membersihkan format JSON dari Google Visualization API
                     const json = JSON.parse(text.substring(47).slice(0, -2));
                     return { tabName: tab, rows: json.table.rows, cols: json.table.cols };
                 })
         );
 
         const results = await Promise.all(promises);
-        
-        // Menggabungkan semua data
         let allEmployees = [];
         results.forEach(sheet => {
-            const processed = processSheetData(sheet.rows, sheet.cols, sheet.tabName);
-            allEmployees = allEmployees.concat(processed);
+            allEmployees = allEmployees.concat(processSheetData(sheet.rows, sheet.cols, sheet.tabName));
         });
 
-        // Simpan ke memori & LocalStorage
         cachedData = allEmployees;
         isDataReady = true;
-        localStorage.setItem('pegawaiData', JSON.stringify(cachedData));
-        localStorage.setItem('pegawaiDataTime', new Date().getTime());
-        
-        console.log("✅ Data berhasil diunduh dan disimpan.");
+        localStorage.setItem('pegawaiDataV4', JSON.stringify(cachedData));
+        localStorage.setItem('pegawaiDataTimeV4', new Date().getTime());
         hideLoadingStatus();
 
     } catch (error) {
-        console.error("❌ Gagal mengambil data:", error);
-        if(statusDiv) statusDiv.innerHTML = "<span style='color:red'>Gagal sinkronisasi data. Periksa koneksi.</span>";
+        console.error("Gagal sinkronisasi:", error);
     }
 }
 
@@ -96,113 +99,271 @@ function hideLoadingStatus() {
     if(statusDiv) statusDiv.classList.add('hidden');
 }
 
-// Fungsi untuk merapikan data mentah dari Google Sheets
-function processSheetData(rows, cols, unitName) {
-    // Mencari index kolom berdasarkan nama header (biar tidak error kalau kolom geser)
-    const findIdx = (key) => cols.findIndex(c => c && c.label && c.label.toLowerCase().includes(key));
+// HELPER PENTING: Membersihkan Angka (Mengatasi Koma vs Titik)
+function cleanNumber(val) {
+    if (typeof val === 'number') return val;
+    if (!val) return 0;
     
-    const idxNama = findIdx('nama');
-    const idxNip = findIdx('nip');
-    const idxJab = findIdx('jabatan');
-    const idxPangkat = findIdx('pangkat');
-    const idxTmt = cols.findIndex(c => c && c.label && (c.label.toLowerCase().includes('tmt') || c.label.toLowerCase().includes('tanggal')));
-    const idxAk = cols.findIndex(c => c && c.label && (c.label.toLowerCase().includes('total ak') || c.label.toLowerCase().includes('jumlah ak')));
+    // Ubah ke string
+    let str = String(val).trim();
+    if (str === '-' || str === '') return 0;
+
+    // Ganti koma dengan titik (Format Indonesia 12,5 -> 12.5)
+    str = str.replace(',', '.');
+    
+    // Hapus karakter selain angka dan titik
+    str = str.replace(/[^\d.-]/g, '');
+
+    const num = parseFloat(str);
+    return isNaN(num) ? 0 : num;
+}
+
+// HELPER: Format Tanggal
+function formatGoogleDate(cell) {
+    if (!cell) return '-';
+    // Case 1: Format string "Date(2022,0,1)"
+    if (cell.v && typeof cell.v === 'string' && cell.v.includes("Date")) {
+        const parts = cell.v.match(/\d+/g);
+        if (parts && parts.length >= 3) {
+            const y = parseInt(parts[0]);
+            const m = parseInt(parts[1]); 
+            const d = parseInt(parts[2]);
+            const dateObj = new Date(y, m, d);
+            return dateObj.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+        }
+    }
+    // Case 2: Formatted string
+    if (cell.f) return cell.f;
+    // Case 3: Value biasa
+    if (cell.v) return String(cell.v);
+    return '-';
+}
+
+function processSheetData(rows, cols, unitName) {
+    const findIdx = (keywords) => cols.findIndex(c => 
+        c && c.label && keywords.some(k => c.label.toLowerCase().includes(k))
+    );
+    
+    // 1. Identifikasi Kolom Dasar
+    const idxNama = findIdx(['nama']);
+    const idxNip = findIdx(['nip']);
+    const idxJab = findIdx(['jabatan', 'jenjang']);
+    const idxPangkat = findIdx(['pangkat']);
+    
+    // 2. DETEKSI TMT (Lebih Luas)
+    // Cari kolom yang mengandung "tmt" DAN ("jab" atau "lantik")
+    // Ini menangkap: "TMT Jabatan", "TMT Jab.", "TMT Pelantikan", dll.
+    let idxTmtJab = cols.findIndex(c => c && c.label && 
+        c.label.toLowerCase().includes('tmt') && 
+        (c.label.toLowerCase().includes('jab') || c.label.toLowerCase().includes('lantik'))
+    );
+    
+    // Fallback ekstrem jika masih -1: Cari kolom yang namanya HANYA "tmt"
+    if (idxTmtJab === -1) {
+         idxTmtJab = cols.findIndex(c => c && c.label && c.label.toLowerCase().trim() === 'tmt');
+    }
+
+    let idxTmtPang = cols.findIndex(c => c && c.label && 
+        c.label.toLowerCase().includes('tmt') && 
+        c.label.toLowerCase().includes('pangkat')
+    );
+
+    // 3. DINAMIS AK CALCULATION (FUTURE PROOF)
+    const akIndices = [];
+    cols.forEach((c, index) => {
+        if (c && c.label) {
+            const label = c.label.toLowerCase();
+            // Logic: Ada kata "ak" ATAU "angka kredit"
+            // DAN (Ada kata "integrasi" ATAU ada 4 digit tahun)
+            // TAPI BUKAN kolom "target" atau "minimal"
+            const isAKKeyword = label.includes('ak') || label.includes('angka kredit');
+            const isYearOrIntegrasi = label.includes('integrasi') || /\d{4}/.test(label);
+            const isTarget = label.includes('target') || label.includes('min') || label.includes('syarat');
+
+            if (isAKKeyword && isYearOrIntegrasi && !isTarget) {
+                akIndices.push(index);
+            }
+        }
+    });
 
     return rows.map(row => {
         const c = row.c;
-        if (!c || !c[idxNama]) return null; // Skip baris kosong
+        if (!c || !c[idxNama]) return null; 
         
+        // --- LOGIKA PENJUMLAHAN AK ---
+        let totalAK = 0;
+        akIndices.forEach(idx => {
+            if (c[idx]) {
+                // Ambil nilai, prioritas value asli, fallback formatted
+                const rawVal = c[idx].v !== null ? c[idx].v : (c[idx].f || 0);
+                // Bersihkan angka (koma jadi titik)
+                totalAK += cleanNumber(rawVal);
+            }
+        });
+
+        // Ambil Data TMT
+        const rawTmtJab = c[idxTmtJab];
+        const rawTmtPang = c[idxTmtPang];
+
         return {
             nama: c[idxNama] ? (c[idxNama].v || '') : '',
             nip: c[idxNip] ? String(c[idxNip].v).replace(/'/g, "") : '-',
             jabatan: c[idxJab] ? (c[idxJab].v || '-') : '-',
             pangkat: c[idxPangkat] ? (c[idxPangkat].v || '-') : '-',
-            tmt: c[idxTmt] ? (c[idxTmt].f || c[idxTmt].v || '-') : '-',
-            ak: c[idxAk] ? (parseFloat(c[idxAk].v) || 0) : 0,
+            
+            // Simpan format tanggal untuk display UI
+            tmtJabatanDisplay: formatGoogleDate(rawTmtJab),
+            tmtPangkatDisplay: formatGoogleDate(rawTmtPang),
+            
+            // Simpan raw value untuk kalkulasi tahun
+            tmtJabatanRaw: rawTmtJab ? (rawTmtJab.v || '') : '',
+            tmtPangkatRaw: rawTmtPang ? (rawTmtPang.v || '') : '',
+            
+            ak: parseFloat(totalAK.toFixed(3)), // Hasil penjumlahan bersih
             unit: unitName,
-            // Kunci pencarian (gabungan nama & nip huruf kecil)
             searchKey: ((c[idxNama]?.v || '') + " " + (c[idxNip]?.v || '')).toLowerCase()
         };
     }).filter(item => item !== null && item.nama !== '');
 }
 
 // ==========================================
-// 3. UI INTERACTION & SEARCH LOGIC
+// 3. UI & PREDIKSI
 // ==========================================
 function searchEmployee() {
     const input = document.getElementById('searchInput').value.toLowerCase().trim();
-    
-    if (!input) {
-        alert("Mohon masukkan Nama atau NIP pegawai.");
-        return;
-    }
+    if (!input) return alert("Mohon masukkan Nama atau NIP.");
 
-    // Ganti tampilan ke Loading Overlay
     document.getElementById('searchView').classList.add('hidden');
     document.getElementById('loadingView').classList.remove('hidden');
 
-    // Delay buatan (0.6 detik) supaya transisi halus & tidak kaget
     setTimeout(() => {
         if (!isDataReady) {
-            alert("Sedang mengunduh data terbaru, mohon tunggu sebentar lalu coba lagi.");
-            resetView();
-            return;
+            alert("Sedang sinkronisasi data. Coba lagi sebentar.");
+            resetView(); return;
         }
 
-        // --- PENCARIAN UTAMA ---
-        const result = cachedData.find(p => p.searchKey.includes(input));
-        
+        const result = cachedData.find(emp => emp.searchKey.includes(input));
         document.getElementById('loadingView').classList.add('hidden');
-        
-        if (result) {
-            showResult(result);
-        } else {
-            alert("Data pegawai tidak ditemukan! Pastikan nama atau NIP benar.");
-            resetView();
-        }
-    }, 600); 
+
+        if (result) tampilkanHasil(result);
+        else { alert("Pegawai tidak ditemukan."); resetView(); }
+    }, 1000);
 }
 
-function showResult(data) {
-    // Isi data ke elemen HTML
-    setText('resNama', data.nama);
-    setText('resNip', data.nip);
-    setText('resJabatan', data.jabatan);
-    setText('resUnit', data.unit);
-    setText('resPangkat', data.pangkat);
-    setText('resTMT', data.tmt);
-    setText('resAK', data.ak.toFixed(3));
+function tampilkanHasil(data) {
+    document.getElementById('resNama').innerText = data.nama;
+    document.getElementById('resNip').innerText = data.nip;
+    document.getElementById('resJabatan').innerText = data.jabatan;
+    document.getElementById('resUnit').innerText = data.unit;
+    document.getElementById('resPangkat').innerText = data.pangkat;
+    document.getElementById('resAK').innerText = data.ak.toLocaleString('id-ID'); // Format angka Indo
 
-    // Logika Estimasi Sederhana
-    let currentYear = new Date().getFullYear();
-    let estimasiTahun = currentYear;
+    // Tampilkan TMT
+    document.getElementById('resTMTJabatan').innerText = data.tmtJabatanDisplay;
+    document.getElementById('resTMTPangkat').innerText = data.tmtPangkatDisplay;
+
+    const prediksi = hitungPrediksi(data);
+    const estEl = document.getElementById('resEstimasi');
     
-    // Contoh logika: Jika AK > 50, naik tahun depan. Jika kurang, 2 tahun lagi.
-    if (data.ak >= 50) {
-        estimasiTahun += 1;
+    if (prediksi.status === 'mentok') {
+        estEl.innerHTML = `
+            <div style="flex:1;">
+                <h3><i class="fas fa-check-circle"></i> Status Puncak</h3>
+                <p>${prediksi.pesan}</p>
+            </div>
+        `;
     } else {
-        estimasiTahun += 2;
+        estEl.innerHTML = `
+            <div>
+                <p>Estimasi Naik Pangkat</p>
+                <h3>Tahun ${prediksi.tahunPangkat}</h3>
+            </div>
+            <div style="border-left: 1px solid rgba(255,255,255,0.2);">
+                <p>Estimasi Naik Jabatan</p>
+                <h3>Tahun ${prediksi.tahunJabatan}</h3>
+            </div>
+        `;
     }
 
-    document.getElementById('resEstimasi').innerHTML = `<i class="far fa-calendar-check"></i> 01 April ${estimasiTahun}`;
-    
-    // Tampilkan Card Hasil
     document.getElementById('resultView').classList.remove('hidden');
 }
 
+// Helper parsing tahun untuk kalkulasi
+function getYearFromRaw(raw) {
+    if (!raw) return new Date().getFullYear();
+    if (typeof raw === 'string' && raw.includes("Date")) {
+        const parts = raw.match(/\d+/g);
+        return parts ? parseInt(parts[0]) : new Date().getFullYear();
+    }
+    const d = new Date(raw);
+    if (!isNaN(d.getFullYear())) return d.getFullYear();
+    return new Date().getFullYear();
+}
+
+function hitungPrediksi(data) {
+    let jabatanRaw = data.jabatan.toLowerCase();
+    let currentRuleKey = null;
+
+    if(jabatanRaw.includes('terampil')) currentRuleKey = 'Terampil';
+    else if(jabatanRaw.includes('mahir')) currentRuleKey = 'Mahir';
+    else if(jabatanRaw.includes('penyelia')) currentRuleKey = 'Penyelia';
+    else if(jabatanRaw.includes('pertama')) currentRuleKey = 'Ahli Pertama';
+    else if(jabatanRaw.includes('muda')) currentRuleKey = 'Ahli Muda';
+    else if(jabatanRaw.includes('madya')) currentRuleKey = 'Ahli Madya';
+    else if(jabatanRaw.includes('utama')) currentRuleKey = 'Ahli Utama';
+
+    if (!currentRuleKey) return { status: 'mentok', pesan: 'Jabatan tidak terdaftar.' };
+
+    const rule = CAREER_RULES[currentRuleKey];
+    if (rule.isMax) return { status: 'mentok', pesan: rule.message };
+
+    const thisYear = new Date().getFullYear();
+    const tmtJabYear = getYearFromRaw(data.tmtJabatanRaw);
+    const tmtPangYear = getYearFromRaw(data.tmtPangkatRaw);
+    
+    // Syarat Min 2 Tahun
+    const minYearJabatan = tmtJabYear + 2;
+    const minYearPangkat = tmtPangYear + 2;
+
+    // Syarat AK
+    const deficit = rule.targetPoint - data.ak;
+    let yearsToCollect = 0;
+    if (deficit > 0) {
+        yearsToCollect = Math.ceil(deficit / rule.coef);
+    }
+    const finishAKYear = thisYear + yearsToCollect;
+
+    let predJab = Math.max(minYearJabatan, finishAKYear);
+    let predPang = Math.max(minYearPangkat, finishAKYear);
+    
+    if (predJab <= thisYear) predJab = `${thisYear} (Siap)`;
+    if (predPang <= thisYear) predPang = `${thisYear} (Siap)`;
+
+    return {
+        status: 'ok',
+        tahunJabatan: predJab,
+        tahunPangkat: predPang
+    };
+}
+
 function resetView() {
-    // Kembalikan ke tampilan awal
     document.getElementById('resultView').classList.add('hidden');
     document.getElementById('loadingView').classList.add('hidden');
     document.getElementById('searchView').classList.remove('hidden');
-    
-    const input = document.getElementById('searchInput');
-    input.value = "";
-    input.focus();
+    document.getElementById('searchInput').value = '';
+    document.getElementById('searchInput').focus(); 
 }
 
-// Helper function
-function setText(id, text) {
-    const el = document.getElementById(id);
-    if(el) el.innerText = text;
+function toggleSidebar() {
+    document.getElementById('sidebar').classList.toggle('active');
+    document.querySelector('.sidebar-overlay').classList.toggle('active');
+}
+
+// ================= MENU & SPLASH LOGIC (UPDATED) =================
+function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.querySelector('.sidebar-overlay');
+    
+    sidebar.classList.toggle('active');
+    overlay.classList.toggle('active');
 }

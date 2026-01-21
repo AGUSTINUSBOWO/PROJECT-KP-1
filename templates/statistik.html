@@ -14,9 +14,35 @@
 </head>
 <body>
 
-    <div id="loading" class="loading-overlay">
-        <div class="spinner"></div>
-        <p>Sinkronisasi Data Spreadsheet...</p>
+    <div id="splash-screen" class="splash-screen">
+        <div class="splash-content">
+            <div class="analytics-icon">
+                <div class="bar bar-1"></div>
+                <div class="bar bar-2"></div>
+                <div class="bar bar-3"></div>
+                <div class="line-chart"></div>
+            </div>
+            <h2 class="splash-title">Analitik Kinerja</h2>
+            <p id="splash-text" class="splash-text">Menyiapkan Visualisasi Data...</p>
+        </div>
+    </div>
+
+   <div class="menu-toggle" onclick="toggleSidebar()">
+        <i class="fas fa-bars"></i>
+    </div>
+
+    <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h3>Menu Navigasi</h3>
+            <span class="close-btn" onclick="toggleSidebar()">&times;</span>
+        </div>
+        <ul class="sidebar-list">
+            <li><a href="{{ url_for('index') }}"><i class="fas fa-home"></i> Beranda</a></li>
+            <li><a href="{{ url_for('rekapan') }}"><i class="fas fa-database"></i> Rekapan Pegawai</a></li>
+            <li><a href="{{ url_for('statistik') }}" class="active"><i class="fas fa-chart-pie"></i> Dashboard Statistik</a></li>
+        </ul>
     </div>
 
     <div class="container">
@@ -26,22 +52,7 @@
                 <h2><i class="fas fa-chart-line"></i> Dashboard Statistik</h2>
                 <p>Visualisasi Data Real-time & Analisis Kinerja</p>
             </div>
-
-            <div class="header-actions">
-                <a href="{{ url_for('index') }}" class="btn-nav btn-secondary">
-                    <i class="fas fa-home"></i>
-                    <span>Beranda</span>
-                </a>
-
-                <a href="{{ url_for('rekapan') }}" class="btn-nav btn-primary">
-                    <div class="icon-box">
-                        <i class="fas fa-table"></i>
-                    </div>
-                    <span>Lihat Data Tabel</span>
-                    <i class="fas fa-arrow-right arrow-indicator"></i>
-                </a>
-            </div>
-        </header>
+            </header>
 
         <div class="filter-bar">
             <div class="filter-label">
@@ -68,7 +79,7 @@
                     <div class="header-filter">
                         <select id="unitFilterTop5" class="mini-select">
                             <option value="ALL">-- Semua Unit --</option>
-                            </select>
+                        </select>
                     </div>
                 </div>
                 <div class="chart-body">

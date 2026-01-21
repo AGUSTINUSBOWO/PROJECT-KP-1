@@ -64,7 +64,7 @@ def bersihkan_angka_kredit(nilai):
         return float(clean)
     except:
         return 0.0
-
+    
 def get_merged_data():
     try:
         headers = {"User-Agent": "Mozilla/5.0"}
@@ -182,7 +182,7 @@ def index():
 
     if request.method == 'POST':
         keyword = request.form.get('keyword', '').lower().strip()
-        
+    
         if not keyword:
             error = "Masukkan NIP atau Nama."
         else:

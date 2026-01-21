@@ -11,25 +11,55 @@ let DETECTED_YEARS = [];
 let charts = {}; // Menyimpan instance chart
 
 document.addEventListener('DOMContentLoaded', () => {
-    fetchAllData();
+    // 1. Jalankan Animasi Intro Splash Screen
+    startSplashScreenSequence();
 
-    // Event saat dropdown Tahun Global berubah
+    // 2. Setup Event Listeners
+    setupEventListeners();
+});
+
+function setupEventListeners() {
+    // Event Dropdown Tahun Global
     document.getElementById('yearFilter').addEventListener('change', function() {
         const selectedYear = parseInt(this.value);
         updateDynamicCharts(selectedYear);
     });
 
-    // Event saat dropdown Filter Unit (Top 5) berubah
+    // Event Dropdown Filter Unit (Top 5)
     document.getElementById('unitFilterTop5').addEventListener('change', function() {
         const selectedYear = parseInt(document.getElementById('yearFilter').value);
-        // Hanya render ulang chart Top 5
         renderTop5(selectedYear);
     });
-});
+}
+
+// ... (Kode lain tetap)
+
+// UPDATE: Samakan nama fungsi dengan rekapan
+function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.querySelector('.sidebar-overlay');
+    
+    // Toggle class active
+    sidebar.classList.toggle('active');
+    overlay.classList.toggle('active');
+}
+
+// ... (Sisa kode tetap)
+
+// === LOGIKA SPLASH SCREEN & DATA FETCHING ===
+function startSplashScreenSequence() {
+    const splashText = document.getElementById('splash-text');
+    
+    // Tahap 1: Tampilkan Intro (Sudah via CSS)
+    
+    // Tahap 2: Setelah 1.5 detik, ubah teks jadi "Sinkronisasi..." dan mulai fetch data
+    setTimeout(() => {
+        splashText.innerText = "Sinkronisasi Data Pegawai...";
+        fetchAllData(); // Mulai ambil data
+    }, 1500);
+}
 
 async function fetchAllData() {
-    const loading = document.getElementById('loading');
-    
     try {
         // Ambil data dari semua tab secara paralel
         let promises = SHEET_TABS.map(sheetName => {
@@ -38,7 +68,6 @@ async function fetchAllData() {
                 .then(res => res.text())
                 .then(text => {
                     const json = JSON.parse(text.substring(47).slice(0, -2));
-                    // Kirim nama sheet juga agar bisa dikelompokkan per Unit
                     return normalizeData(json.table.rows, json.table.cols, sheetName);
                 });
         });
@@ -51,44 +80,45 @@ async function fetchAllData() {
 
         // Setup UI Filters
         setupYearFilter();
-        setupTop5Filter(); // <-- FUNGSI BARU UNTUK ISI DROPDOWN UNIT
+        setupTop5Filter();
         
         // Update Info Data
         document.getElementById('totalDataInfo').innerText = `Total: ${ALL_DATA.length} Pegawai dari ${SHEET_TABS.length} Unit Kerja`;
 
-        // Render Grafik Awal (Tahun Terakhir)
+        // Render Grafik Awal
         const latestYear = DETECTED_YEARS[DETECTED_YEARS.length - 1];
         updateDynamicCharts(latestYear);
-        renderTrendChart(); // Grafik Trend Global (Semua Tahun)
+        renderTrendChart(); 
+
+        // TAHAP 3: Data Selesai, Sembunyikan Splash Screen
+        setTimeout(() => {
+            document.getElementById('splash-screen').classList.add('hidden');
+        }, 1000); // Beri jeda sedikit agar user melihat teks "Selesai" jika perlu
 
     } catch (error) {
         console.error("Error:", error);
-        alert("Gagal memuat data. Cek koneksi.");
-    } finally {
-        loading.classList.add('hidden');
+        document.getElementById('splash-text').innerText = "Gagal memuat data. Cek koneksi.";
+        alert("Gagal memuat data. Cek koneksi internet anda.");
     }
 }
 
 // === PARSING DATA ===
 function normalizeData(rows, cols, sheetName) {
-    // Cari index kolom
     const colIdx = {
         nama: findCol(cols, ["nama", "name"]),
         jabatan: findCol(cols, ["jabatan", "posisi"])
     };
 
-    // Cari Kolom Tahun (misal: "AK 2023", "Total 2024")
     let akYearMap = {}; 
     cols.forEach((col, index) => {
         if (col && col.label) {
             const label = col.label.toLowerCase();
             const matchYear = label.match(/(\d{4})/);
-            // Keyword pencarian kolom angka kredit
             const hasKeyword = label.includes("ak") || label.includes("total") || label.includes("nilai");
 
             if (hasKeyword && matchYear) {
                 const year = parseInt(matchYear[1]);
-                if (year >= 2023) { // Filter sesuai request: mulai 2023
+                if (year >= 2023) {
                     akYearMap[year] = index;
                     if (!DETECTED_YEARS.includes(year)) DETECTED_YEARS.push(year);
                 }
@@ -108,15 +138,15 @@ function normalizeData(rows, cols, sheetName) {
         }
 
         return {
-            unit: sheetName, // Nama Tab (Unit Kerja)
-            nama: getVal(c, colIdx.nama), // Nama Lengkap
+            unit: sheetName,
+            nama: getVal(c, colIdx.nama),
             jabatan: getVal(c, colIdx.jabatan),
             akData: akValues
         };
     }).filter(i => i !== null);
 }
 
-// === SETUP UI ===
+// === SETUP UI HELPERS ===
 function setupYearFilter() {
     DETECTED_YEARS.sort((a, b) => a - b);
     const select = document.getElementById('yearFilter');
@@ -129,15 +159,11 @@ function setupYearFilter() {
         select.appendChild(option);
     });
 
-    // Pilih tahun terakhir otomatis
     select.value = DETECTED_YEARS[DETECTED_YEARS.length - 1];
 }
 
-// FUNGSI BARU: ISI DROPDOWN UNIT FILTER
 function setupTop5Filter() {
     const select = document.getElementById('unitFilterTop5');
-    // Jangan hapus opsi pertama "Semua Unit"
-    
     SHEET_TABS.forEach(tab => {
         let option = document.createElement("option");
         option.value = tab;
@@ -152,18 +178,18 @@ function updateDynamicCharts(year) {
     renderJabatanChart();
 }
 
-// === 1. TOP 5 CHART (FULL NAME + FILTER UNIT) ===
+// === CHART FUNCTIONS ===
+
+// 1. TOP 5 CHART
 function renderTop5(year) {
     const ctx = document.getElementById("topFiveChart").getContext("2d");
     const unitFilter = document.getElementById('unitFilterTop5').value;
     
-    // 1. Filter Data Berdasarkan Unit (Jika user memilih selain "ALL")
     let sourceData = ALL_DATA;
     if (unitFilter !== "ALL") {
         sourceData = ALL_DATA.filter(item => item.unit === unitFilter);
     }
 
-    // 2. Urutkan berdasarkan AK tahun terpilih
     let sorted = [...sourceData].sort((a, b) => (b.akData[year] || 0) - (a.akData[year] || 0));
     let top5 = sorted.slice(0, 5);
 
@@ -179,32 +205,27 @@ function renderTop5(year) {
             datasets: [{
                 label: `Total AK ${year}`,
                 data: values,
-                // Jika filter unit aktif, ganti warna jadi hijau, jika all jadi biru
                 backgroundColor: unitFilter === "ALL" ? 'rgba(78, 115, 223, 0.8)' : 'rgba(28, 200, 138, 0.8)',
                 borderRadius: 5
             }]
         },
         options: {
-            indexAxis: 'y', // Horizontal
+            indexAxis: 'y',
             responsive: true,
             maintainAspectRatio: false,
             plugins: { legend: { display: false } },
-            scales: {
-                x: { beginAtZero: true }
-            }
+            scales: { x: { beginAtZero: true } }
         }
     });
 }
 
-// === 2. CHART PER TAB / UNIT KERJA ===
+// 2. UNIT CHART
 function renderUnitChart(year) {
     const ctx = document.getElementById("unitChart").getContext("2d");
 
-    // Hitung Rata-rata per Unit (Tab)
     let unitStats = {};
     ALL_DATA.forEach(d => {
         if (!unitStats[d.unit]) unitStats[d.unit] = { sum: 0, count: 0 };
-        // Hanya hitung jika data tahun tersebut ada
         let val = d.akData[year] || 0;
         unitStats[d.unit].sum += val;
         unitStats[d.unit].count += 1;
@@ -222,7 +243,7 @@ function renderUnitChart(year) {
             datasets: [{
                 label: `Rata-rata AK (${year})`,
                 data: values,
-                backgroundColor: '#1cc88a',
+                backgroundColor: '#36b9cc',
                 borderRadius: 4
             }]
         },
@@ -234,7 +255,7 @@ function renderUnitChart(year) {
     });
 }
 
-// === 3. SEBARAN JABATAN (REAL DATA) ===
+// 3. JABATAN CHART
 function renderJabatanChart() {
     const ctx = document.getElementById("jabatanChart").getContext("2d");
 
@@ -245,7 +266,6 @@ function renderJabatanChart() {
         counts[j] = (counts[j] || 0) + 1;
     });
 
-    // Urutkan dan ambil Top 7, sisanya "Lainnya"
     let sorted = Object.entries(counts).sort((a,b) => b[1] - a[1]);
     let labels = [], data = [];
     
@@ -262,10 +282,7 @@ function renderJabatanChart() {
             labels: labels,
             datasets: [{
                 data: data,
-                backgroundColor: [
-                    '#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b', 
-                    '#858796', '#5a5c69', '#2c9faf'
-                ]
+                backgroundColor: ['#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b', '#858796', '#5a5c69', '#2c9faf']
             }]
         },
         options: {
@@ -276,11 +293,10 @@ function renderJabatanChart() {
     });
 }
 
-// === 4. TREND GLOBAL ===
+// 4. TREND CHART
 function renderTrendChart() {
     const ctx = document.getElementById("trendChart").getContext("2d");
 
-    // Hitung rata-rata seluruh instansi per tahun
     let averages = DETECTED_YEARS.map(year => {
         let sum = 0, count = 0;
         ALL_DATA.forEach(d => {
@@ -315,10 +331,11 @@ function renderTrendChart() {
     });
 }
 
-// Helper
 function findCol(cols, keys) {
     return cols.findIndex(c => c && keys.some(k => c.label.toLowerCase().includes(k)));
 }
 function getVal(c, idx) {
     return (idx !== -1 && c[idx]) ? (c[idx].v || c[idx].f || '-') : '-';
 }
+
+
