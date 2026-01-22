@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Akses Kuota Jabatan</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style-login.css">
+</head>
+<body>
+    <script src="script-login.js"></script>
+    <div class="login-container fade-in-up">
+        <div class="login-header">
+            <div class="icon-circle">
+                <i class="fas fa-door-open"></i>
+            </div>
+            <h2>Akses Kuota Jabatan</h2>
+            <p>Silahkan masuk untuk mengelola data formasi</p>
+        </div>
+
+        <form id="loginForm">
+            <div class="input-group">
+                <i class="fas fa-user"></i>
+                <input type="text" id="username" placeholder="Username" autocomplete="off" required>
+            </div>
+            <div class="input-group">
+                <i class="fas fa-lock"></i>
+                <input type="password" id="password" placeholder="Password" required>
+            </div>
+            
+            <div class="error-msg" id="errorMsg">
+                <i class="fas fa-exclamation-circle"></i> Username atau Password salah!
+            </div>
+
+            <button type="submit" class="btn-login">
+                MASUK SEKARANG <i class="fas fa-arrow-right"></i>
+            </button>
+        </form>
+
+        <div class="footer-login">
+            <a href="index.html" class="back-link"><i class="fas fa-arrow-left"></i> Kembali ke Beranda</a>
+        </div>
+    </div>
+
+    <div id="splashScreen" class="splash-overlay hidden">
+        <div class="splash-content">
+            <div class="success-icon">
+                <i class="fas fa-check"></i>
+            </div>
+            <h1>Login Berhasil!</h1>
+            <p>Menyiapkan Dashboard Kuota Jabatan...</p>
+            <div class="loader-line"></div>
+        </div>
+    </div>
+
+    <script src="script-login.js"></script>
+</body>
+</html>

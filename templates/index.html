@@ -22,11 +22,24 @@
             <h3>Menu Navigasi</h3>
             <span class="close-btn" onclick="toggleSidebar()">&times;</span>
         </div>
-        <ul class="sidebar-list">
-            <li><a href="{{ url_for('index') }}"class="active"><i class="fas fa-home"></i> Beranda</a></li>
-            <li><a href="{{ url_for('rekapan') }}" ><i class="fas fa-database"></i> Rekapan Pegawai</a></li>
-            <li><a href="{{ url_for('statistik') }}"><i class="fas fa-chart-pie"></i> Dashboard Statistik</a></li>
-        </ul>
+        
+        <div style="display: flex; flex-direction: column; height: 100%;">
+            <ul class="sidebar-list" style="flex-grow: 1;">
+                <li><a href="{{ url_for('index') }}" class="active"><i class="fas fa-home"></i> Beranda</a></li>
+                <li><a href="{{ url_for('rekapan') }}"><i class="fas fa-database"></i> Rekapan Pegawai</a></li>
+                <li><a href="{{ url_for('statistik') }}"><i class="fas fa-chart-pie"></i> Dashboard Statistik</a></li>
+            </ul>
+
+           <ul class="sidebar-list" style="border-top: 1px solid #eee; padding-top: 10px; padding-bottom: 20px;">
+    <li>
+        <a href="{{ url_for('static', filename='login.html') }}" style="color: #2563eb; font-weight: 700; background: #eff6ff;">
+            <i class="fas fa-door-open"></i> 
+            <span>Akses Kuota Jabatan</span>
+            <i class="fas fa-arrow-right" style="margin-left: auto; font-size: 0.8rem;"></i>
+        </a>
+    </li>
+</ul>
+        </div>
     </div> 
 
     <div id="welcomeScreen" class="welcome-overlay">

@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Statistik Kuota - Admin Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="style-kuota.css">
+</head>
+<body>
+
+    <div class="menu-toggle" onclick="toggleSidebar()">
+        <i class="fas fa-bars"></i>
+    </div>
+    <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h3>SIMKARIR ADMIN</h3>
+            <span class="close-btn" onclick="toggleSidebar()">&times;</span>
+        </div>
+        
+        <div class="sidebar-menu-wrapper">
+            <ul class="sidebar-list">
+                <li><a href="kuota.html"><i class="fas fa-table"></i> Kuota Jabatan</a></li>
+                <li><a href="#" class="active"><i class="fas fa-chart-pie"></i> Statistik Kuota</a></li>
+                <li><a href="javascript:void(0)" onclick="alert('Fitur Scan Kepwal akan segera hadir!')"><i class="fas fa-qrcode"></i> Scan Kepwal Terbaru</a></li>
+            </ul>
+
+            <ul class="sidebar-list bottom-menu">
+                <li><a href="/"><i class="fas fa-home"></i> Kembali ke Beranda</a></li>
+                <li><a href="/" class="logout-link"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="main-content">
+        
+        <div class="top-header stats-header-flex">
+            <div>
+                <h1 id="statsTitle">Statistik Global</h1>
+                <p>Visualisasi Distribusi Formasi Jabatan</p>
+            </div>
+            
+            <div class="filter-container">
+                <label><i class="fas fa-filter"></i> Filter Unit:</label>
+                <select id="unitFilter" onchange="updateStatsView()">
+                    <option value="ALL">Semua Unit Kerja (Global)</option>
+                    </select>
+            </div>
+        </div>
+
+        <div id="viewStats" class="view-section active-view">
+            <div class="stats-dashboard fade-in-up">
+                
+                <div class="mini-stats-grid">
+                    <div class="mini-card">
+                        <div class="icon-bg blue"><i class="fas fa-layer-group"></i></div>
+                        <div><span id="labelCard1">Total Unit Kerja</span><h3 id="valCard1">Loading...</h3></div>
+                    </div>
+                    <div class="mini-card">
+                        <div class="icon-bg green"><i class="fas fa-users"></i></div>
+                        <div><span>Total Formasi</span><h3 id="valCard2">Loading...</h3></div>
+                    </div>
+                    <div class="mini-card">
+                        <div class="icon-bg purple"><i class="fas fa-briefcase"></i></div>
+                        <div><span id="labelCard3">Unit Terpadat</span><h3 id="valCard3">-</h3></div>
+                    </div>
+                </div>
+
+                <div class="charts-container">
+                    <div class="chart-card main-chart">
+                        <div class="chart-header">
+                            <h4 id="barChartTitle"><i class="fas fa-chart-bar"></i> Distribusi Formasi</h4>
+                        </div>
+                        <div class="chart-body"><canvas id="barChart"></canvas></div>
+                    </div>
+                    <div class="chart-card side-chart">
+                        <div class="chart-header">
+                            <h4 id="pieChartTitle"><i class="fas fa-chart-pie"></i> Proporsi Data</h4>
+                        </div>
+                        <div class="chart-body"><canvas id="pieChart"></canvas></div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script src="script-kuota.js"></script>
+</body>
+</html>
