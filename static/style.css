@@ -61,7 +61,7 @@ body {
 .search-container { max-width: 500px; margin: 0 auto; text-align: center; padding: 40px 0; }
 .input-group input { width: 100%; padding: 20px 25px 20px 60px; border-radius: 50px; border: 2px solid transparent; background: white; font-size: 1.1rem; box-shadow: 0 4px 15px rgba(0,0,0,0.05); transition: 0.3s; }
 .input-group input:focus { border-color: #3b82f6; outline: none; }
-.search-icon { position: absolute; left: 25px; top: 50%; transform: translateY(-50%); color: #94a3b8; }
+.search-icon { position: absolute; left: 265px; top: 53%; transform: translateY(-50%); color: #94a3b8; }
 .btn-primary { width: 100%; padding: 18px; border-radius: 50px; border: none; background: var(--primary-gradient); color: white; font-size: 1.1rem; font-weight: 700; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 15px; box-shadow: 0 10px 25px rgba(37, 99, 235, 0.4); }
 
 /* RESULT GRID */
@@ -215,4 +215,70 @@ body {
 .sidebar-overlay.active {
     display: block;
     opacity: 1;
+}
+
+/* =========================================
+   STYLE TOMBOL CARI LAIN (MODERN)
+   ========================================= */
+
+.btn-reset {
+    /* Layout & Posisi */
+    display: inline-flex;       /* Agar icon dan teks sejajar rapi */
+    align-items: center;
+    justify-content: center;
+    gap: 10px;                  /* Jarak antara icon dan tulisan */
+    padding: 14px 28px;         /* Ukuran tombol yang pas */
+    margin-top: 25px;           /* Jarak dari elemen atasnya */
+    width: auto;                /* Lebar menyesuaikan konten, atau bisa 100% jika mau full */
+
+    /* Warna & Tampilan Dasar (Soft Blue) */
+    background-color: #eff6ff;  /* Biru sangat muda */
+    color: #2563eb;             /* Biru utama */
+    border: 1px solid rgba(37, 99, 235, 0.2); /* Border tipis */
+    border-radius: 50px;        /* Bentuk Pill/Kapsul */
+    
+    /* Typography */
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+
+    /* Efek & Transisi Halus */
+    box-shadow: 0 4px 6px rgba(37, 99, 235, 0.1);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* EFEK SAAT MOUSE DIARAHKAN (HOVER) */
+.btn-reset:hover {
+    /* Berubah jadi Gradient Biru */
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    color: white;               /* Teks jadi putih */
+    border-color: transparent;  /* Border hilang */
+    
+    /* Efek Melayang */
+    transform: translateY(-3px);
+    box-shadow: 0 10px 20px rgba(37, 99, 235, 0.3);
+}
+
+/* ANIMASI ICON SAAT HOVER */
+.btn-reset i {
+    transition: transform 0.5s ease;
+}
+
+.btn-reset:hover i {
+    transform: rotate(-360deg); /* Icon berputar balik saat di-hover */
+}
+
+/* EFEK SAAT DIKLIK (ACTIVE) */
+.btn-reset:active {
+    transform: scale(0.98);     /* Efek membal sedikit */
+    box-shadow: 0 2px 10px rgba(37, 99, 235, 0.2);
+}
+
+/* RESPONSIVE (HP) */
+@media (max-width: 480px) {
+    .btn-reset {
+        width: 100%;            /* Di HP tombol jadi lebar penuh */
+        font-size: 0.95rem;
+    }
 }

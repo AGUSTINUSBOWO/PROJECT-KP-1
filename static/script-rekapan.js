@@ -37,19 +37,14 @@ const JABATAN_RULES = {
 let CURRENT_SHEET_DATA = [];
 let DETECTED_YEARS = [];
 
-// ================= MENU & SPLASH LOGIC (UPDATED) =================
+// ================= MENU & SPLASH LOGIC =================
 function toggleSidebar() {
     const sidebar = document.getElementById('sidebar');
     const overlay = document.querySelector('.sidebar-overlay');
-    
     sidebar.classList.toggle('active');
     overlay.classList.toggle('active');
 }
 
-// Tidak perlu event listener 'click outside' manual lagi, 
-// karena sudah ditangani oleh onclick pada .sidebar-overlay
-
-// Close menu when clicking outside
 document.addEventListener('click', function(event) {
     const sidebar = document.getElementById('sidebar');
     const toggle = document.querySelector('.menu-toggle');
@@ -59,29 +54,23 @@ document.addEventListener('click', function(event) {
 });
 
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. Jalankan Splash Screen dulu (3 Detik)
     const splash = document.getElementById('splash-screen');
     const loadingOverlay = document.getElementById('loading');
     
-    // Pastikan loading data belum muncul/tertutup splash
     loadingOverlay.classList.add('hidden'); 
     
     setTimeout(() => {
-        // Hilangkan Splash Screen
         splash.classList.add('hidden');
-        
-        // Baru Munculkan Loading Data dan Load Data
         generateTabs();
         setupFilters();
         loadSheetData(SHEET_TABS[0]); 
-        
-    }, 3000); // 3000ms = 3 detik durasi splash
+    }, 3000); 
 });
 
 // ================= LOAD DATA =================
 async function loadSheetData(sheetName) {
     const loading = document.getElementById('loading');
-    loading.classList.remove('hidden'); // Tampilkan loading overlay
+    loading.classList.remove('hidden');
 
     document.querySelectorAll('.tabs button').forEach(b => {
         b.classList.remove('active');
@@ -102,12 +91,13 @@ async function loadSheetData(sheetName) {
         updateYearDropdown(DETECTED_YEARS);
         populatePangkatDropdown(); 
         populateUnitDropdown(CURRENT_SHEET_DATA);
+        populateProfesiDropdown(CURRENT_SHEET_DATA); // Populate Profesi
 
         applyLogicAndRender();
         
     } catch (error) {
         console.error('Error:', error);
-        document.getElementById('table-body').innerHTML = `<tr><td colspan="9" class="text-center">Gagal memuat data.</td></tr>`;
+        document.getElementById('table-body').innerHTML = `<tr><td colspan="10" class="text-center">Gagal memuat data.</td></tr>`;
     } finally {
         setTimeout(() => loading.classList.add('hidden'), 500);
     }
@@ -122,6 +112,8 @@ function normalizeData(rows, cols, sheetName) {
         jabatan: getIdx('jabatan'),
         nip: cols.findIndex(c => c && c.label && (c.label.toLowerCase().includes("nip") && !c.label.toLowerCase().includes("nik"))),
         nik: cols.findIndex(c => c && c.label && (c.label.toLowerCase().includes("nik"))),
+        // Kolom F biasanya index 5 (0-based) jika struktur standar, atau cari label "profesi"
+        profesi: cols.findIndex(c => c && c.label && c.label.toLowerCase().includes("profesi")),
         unit: cols.findIndex(c => c && c.label && (
                 c.label.toLowerCase().includes("unit") || 
                 c.label.toLowerCase().includes("tempat") || 
@@ -131,6 +123,9 @@ function normalizeData(rows, cols, sheetName) {
         tmtJab: cols.findIndex(c => c && c.label && (c.label.toLowerCase().includes("tmt jabatan") || c.label.toLowerCase().includes("tmt jafung"))),
         tmtPkt: cols.findIndex(c => c && c.label && (c.label.toLowerCase().includes("tmt pangkat") || c.label.toLowerCase().includes("tmt gol")))
     };
+
+    // Fallback jika label profesi tidak ditemukan, asumsi Kolom F (index 5)
+    if (idx.profesi === -1) idx.profesi = 5; 
 
     if (idx.nip === -1) idx.nip = getIdx('nip'); 
     
@@ -188,11 +183,15 @@ function normalizeData(rows, cols, sheetName) {
         if (realUnit === '-' || realUnit === '') realUnit = sheetName;
 
         let statusKesiapan = analyzeReadiness(stdJab, stdPkt, val(idx.tmtJab), val(idx.tmtPkt), totalAK);
+        
+        // Cek Anomali
+        let anomaliMsg = checkAnomaly(stdPkt, stdJab);
 
         return {
             nama: val(idx.nama),
             nip: val(idx.nip),
             nik: val(idx.nik),
+            profesi: val(idx.profesi), // Data Profesi
             jabatan: stdJab,
             unit: realUnit, 
             pangkat: stdPkt, 
@@ -200,7 +199,8 @@ function normalizeData(rows, cols, sheetName) {
             akData: akPerYear,
             totalAK: totalAK.toFixed(3),
             kesiapan: statusKesiapan,
-            _search: (val(idx.nama) + " " + val(idx.nip) + " " + realUnit + " " + rawPangkatStr).toLowerCase()
+            anomali: anomaliMsg, // Status Anomali
+            _search: (val(idx.nama) + " " + val(idx.nip) + " " + realUnit + " " + rawPangkatStr + " " + val(idx.profesi)).toLowerCase()
         };
     }).filter(item => item !== null && item.nama !== '-');
 
@@ -225,6 +225,13 @@ function populateUnitDropdown(data) {
     units.forEach(u => select.add(new Option(u, u)));
 }
 
+function populateProfesiDropdown(data) {
+    const select = document.getElementById('filterProfesi');
+    select.innerHTML = '<option value="">Semua</option>';
+    let profesiList = [...new Set(data.map(d => d.profesi).filter(p => p !== '-' && p !== ''))].sort();
+    profesiList.forEach(p => select.add(new Option(p, p)));
+}
+
 function updateYearDropdown(years) {
     const sel = document.getElementById('filterTahun');
     sel.innerHTML = '';
@@ -232,7 +239,7 @@ function updateYearDropdown(years) {
     years.forEach(y => sel.add(new Option(y, y)));
 }
 
-// ================= LOGIKA PINTAR STANDARISASI =================
+// ================= LOGIKA ANOMALI & STANDARISASI =================
 function standardizePangkat(raw) {
     if (!raw || raw === '-') return '-';
     let r = raw.trim(); 
@@ -260,6 +267,35 @@ function standardizeJabatan(raw) {
     if (r.includes("terampil")) return "Terampil";
     if (r.includes("pemula")) return "Pemula";
     return raw.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
+}
+
+function getPangkatLevel(code) {
+    const p = PANGKAT_REF.find(x => x.code === code);
+    return p ? p.level : 0;
+}
+
+// LOGIKA BARU: Cek Anomali Pangkat vs Jabatan
+function checkAnomaly(pangkatCode, jabatanName) {
+    const jabRule = JABATAN_RULES[jabatanName.toLowerCase()];
+    if (!jabRule || !pangkatCode || pangkatCode === '-') return null;
+
+    const currentLevel = getPangkatLevel(pangkatCode);
+    if (currentLevel === 0) return null;
+
+    // Cari level minimum dan maksimum untuk jabatan tersebut
+    const minPangkatCode = jabRule.minPangkat[0];
+    const maxPangkatCode = jabRule.minPangkat[jabRule.minPangkat.length - 1];
+    
+    const minLevel = getPangkatLevel(minPangkatCode);
+    const maxLevel = getPangkatLevel(maxPangkatCode);
+
+    if (currentLevel > maxLevel) {
+        return "Sudah naik pangkat namun jabatan tetap";
+    } else if (currentLevel < minLevel) {
+        return "Sudah naik jabatan namun pangkat tetap";
+    }
+
+    return null; // Sesuai/Normal
 }
 
 function analyzeReadiness(jabatan, pangkat, tmtJab, tmtPkt, totalAK) {
@@ -300,6 +336,7 @@ function applyLogicAndRender() {
     const fJab = document.getElementById('filterJabatan').value.toLowerCase();
     const fPkt = document.getElementById('filterPangkat').value; 
     const fUnit = document.getElementById('filterUnit').value.toLowerCase();
+    const fProf = document.getElementById('filterProfesi').value.toLowerCase(); // Filter Profesi
     const fSiap = document.getElementById('filterKesiapan').value;
     const fTahun = document.getElementById('filterTahun').value;
 
@@ -308,11 +345,12 @@ function applyLogicAndRender() {
         const mJab = fJab === "" || row.jabatan.toLowerCase().includes(fJab);
         const mPkt = fPkt === "" || row.pangkat === fPkt; 
         const mUnit = fUnit === "" || row.unit.toLowerCase().includes(fUnit);
+        const mProf = fProf === "" || row.profesi.toLowerCase() === fProf; // Match Profesi
         
         let mSiap = true;
         if(fSiap) mSiap = row.kesiapan.some(s => s.toLowerCase().includes(fSiap.toLowerCase()));
 
-        return mSearch && mJab && mPkt && mUnit && mSiap;
+        return mSearch && mJab && mPkt && mUnit && mProf && mSiap;
     });
 
     renderTable(filtered, fTahun);
@@ -324,7 +362,7 @@ function renderTable(data, selectedYear) {
     tbody.innerHTML = '';
 
     if (data.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="9" class="text-center" style="padding:20px;">Tidak ada data ditemukan.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="10" class="text-center" style="padding:20px;">Tidak ada data ditemukan.</td></tr>`;
         footer.innerText = "0 Data";
         return;
     }
@@ -350,11 +388,28 @@ function renderTable(data, selectedYear) {
             pangkatLabel = `${item.pangkat}<br><span style="font-size:10px; color:#999;">${item.rawPangkat}</span>`;
         }
 
+        // --- RENDER ANOMALI ---
+        let anomalyIcon = '';
+        if (item.anomali) {
+            // Menggunakan SweetAlert saat diklik
+            const onClickAttr = `onclick="Swal.fire({
+                icon: 'warning',
+                title: 'Perhatian',
+                text: '${item.anomali}',
+                confirmButtonColor: '#4e73df'
+            })"`;
+            anomalyIcon = `<span class="anomaly-btn" ${onClickAttr} title="Klik untuk info"><i class="fas fa-exclamation"></i></span>`;
+        }
+
         tr.innerHTML = `
-            <td><div style="font-weight:600;">${item.nama}</div></td>
+            <td>
+                <div style="font-weight:600; display:flex; align-items:center;">
+                    ${item.nama} ${anomalyIcon}
+                </div>
+            </td>
             <td>${item.nip}</td>
             <td>${item.nik}</td>
-            <td>${item.jabatan}</td>
+            <td>${item.profesi}</td> <td>${item.jabatan}</td>
             <td>${item.unit}</td>
             <td class="text-center">${pangkatLabel}</td>
             <td class="text-center" style="color:#4e73df; font-weight:bold;">${akDisplay}</td>
@@ -371,14 +426,14 @@ function setupFilters() {
     const jabs = ["Ahli Pertama", "Ahli Muda", "Ahli Madya", "Ahli Utama", "Pemula", "Terampil", "Mahir", "Penyelia"];
     jabs.forEach(j => document.getElementById('filterJabatan').add(new Option(j, j)));
 
-    ['globalSearch', 'filterJabatan', 'filterPangkat', 'filterUnit', 'filterTahun', 'filterKesiapan'].forEach(id => {
+    ['globalSearch', 'filterJabatan', 'filterPangkat', 'filterUnit', 'filterProfesi', 'filterTahun', 'filterKesiapan'].forEach(id => {
         document.getElementById(id).addEventListener('input', applyLogicAndRender);
     });
 }
 
 function generateTabs() {
     const c = document.getElementById('tab-container');
-    c.innerHTML = ''; // Clear tabs first to avoid duplicates if re-run
+    c.innerHTML = ''; 
     SHEET_TABS.forEach(t => {
         const btn = document.createElement('button');
         btn.innerText = t;
