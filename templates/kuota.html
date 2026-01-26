@@ -6,7 +6,8 @@
     <title>Kuota Jabatan - Admin Dashboard</title>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="style-kuota.css">
+    
+    <link rel="stylesheet" href="{{ url_for('static', filename='style-kuota.css') }}">
 </head>
 <body>
 
@@ -24,12 +25,14 @@
         <div class="sidebar-menu-wrapper">
             <ul class="sidebar-list">
                 <li><a href="#" class="active"><i class="fas fa-table"></i> Kuota Jabatan</a></li>
-                <li><a href="statistik-kuota.html"><i class="fas fa-chart-pie"></i> Statistik Kuota</a></li>
-               <li><a href="https://script.google.com/macros/s/AKfycbwnW-1bBtQaMDXHUrzXnqJsQ-lohrRCifwRWR_AbIRYOtiU53X9YeSjzPBxYtQE8TY6/exec" target="_blank" class="external-link"><i class="fas fa-qrcode"></i> Scan Kepwal Terbaru</a></li>
+                
+                <li><a href="{{ url_for('statistik_kuota') }}"><i class="fas fa-chart-pie"></i> Statistik Kuota</a></li>
+                
+                <li><a href="https://script.google.com/macros/s/AKfycbwnW-1bBtQaMDXHUrzXnqJsQ-lohrRCifwRWR_AbIRYOtiU53X9YeSjzPBxYtQE8TY6/exec" target="_blank" class="external-link"><i class="fas fa-qrcode"></i> Scan Kepwal Terbaru</a></li>
             </ul>
 
             <ul class="sidebar-list bottom-menu">
-                <li><a href="/" class="logout-link"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+                <li><a href="{{ url_for('index') }}" class="logout-link"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
             </ul>
         </div>
     </div>
@@ -100,6 +103,6 @@
         </div>
     </div>
 
-    <script src="script-kuota.js"></script>
+    <script src="{{ url_for('static', filename='script-kuota.js') }}"></script>
 </body>
-</html>
+</html> 

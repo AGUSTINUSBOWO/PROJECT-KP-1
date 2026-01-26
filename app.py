@@ -231,10 +231,21 @@ def index():
 def rekapan():
     return render_template('rekapan.html')
 
-# === ROUTE BARU UNTUK STATISTIK ===
 @app.route('/statistik')
 def statistik():
     return render_template('statistik.html')
+
+@app.route('/login')
+def login():
+    return render_template('login.html')
+
+@app.route('/kuota')
+def kuota():
+    return render_template('kuota.html')
+
+@app.route('/statistik-kuota')
+def statistik_kuota():
+    return render_template('statistik-kuota.html')
 
 if __name__ == "__main__":
     app.run(host="127.0.0.1", port=5001, debug=True)

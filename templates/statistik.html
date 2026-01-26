@@ -45,12 +45,16 @@
         </ul>
          <ul class="sidebar-list" style="border-top: 1px solid #eee; padding-top: 355px; padding-bottom: 20px;">
     <li>
-        <a href="{{ url_for('static', filename='login.html') }}" style="color: #2563eb; font-weight: 700; background: #eff6ff;">
+    <a href="{{ url_for('login') }}" style="display: flex; align-items: center; justify-content: space-between; color: #2563eb; font-weight: 700; background: #eff6ff; padding: 10px 15px; border-radius: 8px; text-decoration: none;">
+        
+        <div style="display: flex; align-items: center; gap: 10px;">
             <i class="fas fa-door-open"></i> 
             <span>Akses Kuota Jabatan</span>
-            <i class="fas fa-arrow-right" style="margin-left: auto; font-size: 0.8rem;"></i>
-        </a>
-    </li>
+        </div>
+
+        <i class="fas fa-arrow-right" style="font-size: 0.8rem;"></i>
+    </a>
+</li>
 </ul>
     </div>
     

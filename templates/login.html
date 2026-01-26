@@ -6,10 +6,10 @@
     <title>Login - Akses Kuota Jabatan</title>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="style-login.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style-login.css') }}">
 </head>
 <body>
-    <script src="script-login.js"></script>
+    
     <div class="login-container fade-in-up">
         <div class="login-header">
             <div class="icon-circle">
@@ -39,7 +39,7 @@
         </form>
 
         <div class="footer-login">
-            <a href="index.html" class="back-link"><i class="fas fa-arrow-left"></i> Kembali ke Beranda</a>
+           <a href="{{ url_for('index') }}" class="back-link"><i class="fas fa-arrow-left"></i> Kembali ke Beranda</a>
         </div>
     </div>
 
@@ -54,6 +54,6 @@
         </div>
     </div>
 
-    <script src="script-login.js"></script>
+    <script src="{{ url_for('static', filename='script-login.js') }}"></script>
 </body>
 </html>

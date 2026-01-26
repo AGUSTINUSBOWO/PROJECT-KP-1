@@ -15,7 +15,7 @@ document.getElementById('loginForm').addEventListener('submit', function(e) {
         
         // Timer Splash Screen sebelum redirect
         setTimeout(() => {
-            window.location.href = 'kuota.html';
+            window.location.href = '/kuota';
         }, 2000);
     } else {
         // GAGAL
