@@ -91,13 +91,13 @@ async function loadSheetData(sheetName) {
         updateYearDropdown(DETECTED_YEARS);
         populatePangkatDropdown(); 
         populateUnitDropdown(CURRENT_SHEET_DATA);
-        populateProfesiDropdown(CURRENT_SHEET_DATA); // Populate Profesi
+        populateProfesiDropdown(CURRENT_SHEET_DATA); 
 
         applyLogicAndRender();
         
     } catch (error) {
         console.error('Error:', error);
-        document.getElementById('table-body').innerHTML = `<tr><td colspan="10" class="text-center">Gagal memuat data.</td></tr>`;
+        document.getElementById('table-body').innerHTML = `<tr><td colspan="11" class="text-center">Gagal memuat data.</td></tr>`;
     } finally {
         setTimeout(() => loading.classList.add('hidden'), 500);
     }
@@ -112,7 +112,6 @@ function normalizeData(rows, cols, sheetName) {
         jabatan: getIdx('jabatan'),
         nip: cols.findIndex(c => c && c.label && (c.label.toLowerCase().includes("nip") && !c.label.toLowerCase().includes("nik"))),
         nik: cols.findIndex(c => c && c.label && (c.label.toLowerCase().includes("nik"))),
-        // Kolom F biasanya index 5 (0-based) jika struktur standar, atau cari label "profesi"
         profesi: cols.findIndex(c => c && c.label && c.label.toLowerCase().includes("profesi")),
         unit: cols.findIndex(c => c && c.label && (
                 c.label.toLowerCase().includes("unit") || 
@@ -124,9 +123,7 @@ function normalizeData(rows, cols, sheetName) {
         tmtPkt: cols.findIndex(c => c && c.label && (c.label.toLowerCase().includes("tmt pangkat") || c.label.toLowerCase().includes("tmt gol")))
     };
 
-    // Fallback jika label profesi tidak ditemukan, asumsi Kolom F (index 5)
     if (idx.profesi === -1) idx.profesi = 5; 
-
     if (idx.nip === -1) idx.nip = getIdx('nip'); 
     
     if (idx.unit === -1 && cols.length > 1) {
@@ -183,15 +180,14 @@ function normalizeData(rows, cols, sheetName) {
         if (realUnit === '-' || realUnit === '') realUnit = sheetName;
 
         let statusKesiapan = analyzeReadiness(stdJab, stdPkt, val(idx.tmtJab), val(idx.tmtPkt), totalAK);
-        
-        // Cek Anomali
         let anomaliMsg = checkAnomaly(stdPkt, stdJab);
+        let pensionInfo = calculatePensionInfo(val(idx.nip), stdJab);
 
         return {
             nama: val(idx.nama),
             nip: val(idx.nip),
             nik: val(idx.nik),
-            profesi: val(idx.profesi), // Data Profesi
+            profesi: val(idx.profesi), 
             jabatan: stdJab,
             unit: realUnit, 
             pangkat: stdPkt, 
@@ -199,7 +195,8 @@ function normalizeData(rows, cols, sheetName) {
             akData: akPerYear,
             totalAK: totalAK.toFixed(3),
             kesiapan: statusKesiapan,
-            anomali: anomaliMsg, // Status Anomali
+            anomali: anomaliMsg, 
+            pensiun: pensionInfo, 
             _search: (val(idx.nama) + " " + val(idx.nip) + " " + realUnit + " " + rawPangkatStr + " " + val(idx.profesi)).toLowerCase()
         };
     }).filter(item => item !== null && item.nama !== '-');
@@ -274,7 +271,6 @@ function getPangkatLevel(code) {
     return p ? p.level : 0;
 }
 
-// LOGIKA BARU: Cek Anomali Pangkat vs Jabatan
 function checkAnomaly(pangkatCode, jabatanName) {
     const jabRule = JABATAN_RULES[jabatanName.toLowerCase()];
     if (!jabRule || !pangkatCode || pangkatCode === '-') return null;
@@ -282,7 +278,6 @@ function checkAnomaly(pangkatCode, jabatanName) {
     const currentLevel = getPangkatLevel(pangkatCode);
     if (currentLevel === 0) return null;
 
-    // Cari level minimum dan maksimum untuk jabatan tersebut
     const minPangkatCode = jabRule.minPangkat[0];
     const maxPangkatCode = jabRule.minPangkat[jabRule.minPangkat.length - 1];
     
@@ -295,7 +290,35 @@ function checkAnomaly(pangkatCode, jabatanName) {
         return "Sudah naik jabatan namun pangkat tetap";
     }
 
-    return null; // Sesuai/Normal
+    return null; 
+}
+
+function calculatePensionInfo(nip, jabatan) {
+    if (!nip || nip.length < 8) return { text: '-', isNear: false };
+
+    const yearLahir = parseInt(nip.substring(0, 4));
+    const monthLahir = parseInt(nip.substring(4, 6));
+
+    if (isNaN(yearLahir) || isNaN(monthLahir)) return { text: '-', isNear: false };
+
+    let limitUsia = 58; 
+    if (jabatan.toLowerCase().includes('ahli madya')) {
+        limitUsia = 60;
+    }
+
+    const pensionYear = yearLahir + limitUsia;
+    const pensionDate = new Date(pensionYear, monthLahir - 1, 1); 
+
+    const now = new Date();
+    const monthsLeft = (pensionYear - now.getFullYear()) * 12 + ((monthLahir - 1) - now.getMonth());
+
+    const monthName = pensionDate.toLocaleDateString('id-ID', { month: 'long' });
+    const text = `${monthName} ${pensionYear}`;
+
+    return {
+        text: text,
+        isNear: monthsLeft <= 12 && monthsLeft > 0 
+    };
 }
 
 function analyzeReadiness(jabatan, pangkat, tmtJab, tmtPkt, totalAK) {
@@ -336,7 +359,7 @@ function applyLogicAndRender() {
     const fJab = document.getElementById('filterJabatan').value.toLowerCase();
     const fPkt = document.getElementById('filterPangkat').value; 
     const fUnit = document.getElementById('filterUnit').value.toLowerCase();
-    const fProf = document.getElementById('filterProfesi').value.toLowerCase(); // Filter Profesi
+    const fProf = document.getElementById('filterProfesi').value.toLowerCase(); 
     const fSiap = document.getElementById('filterKesiapan').value;
     const fTahun = document.getElementById('filterTahun').value;
 
@@ -345,7 +368,7 @@ function applyLogicAndRender() {
         const mJab = fJab === "" || row.jabatan.toLowerCase().includes(fJab);
         const mPkt = fPkt === "" || row.pangkat === fPkt; 
         const mUnit = fUnit === "" || row.unit.toLowerCase().includes(fUnit);
-        const mProf = fProf === "" || row.profesi.toLowerCase() === fProf; // Match Profesi
+        const mProf = fProf === "" || row.profesi.toLowerCase() === fProf; 
         
         let mSiap = true;
         if(fSiap) mSiap = row.kesiapan.some(s => s.toLowerCase().includes(fSiap.toLowerCase()));
@@ -362,7 +385,7 @@ function renderTable(data, selectedYear) {
     tbody.innerHTML = '';
 
     if (data.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="10" class="text-center" style="padding:20px;">Tidak ada data ditemukan.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="11" class="text-center" style="padding:20px;">Tidak ada data ditemukan.</td></tr>`;
         footer.innerText = "0 Data";
         return;
     }
@@ -388,10 +411,11 @@ function renderTable(data, selectedYear) {
             pangkatLabel = `${item.pangkat}<br><span style="font-size:10px; color:#999;">${item.rawPangkat}</span>`;
         }
 
-        // --- RENDER ANOMALI ---
+        // --- RENDER ICON ALERT (Anomali & Pensiun) ---
+        
+        // 1. Anomali
         let anomalyIcon = '';
         if (item.anomali) {
-            // Menggunakan SweetAlert saat diklik
             const onClickAttr = `onclick="Swal.fire({
                 icon: 'warning',
                 title: 'Perhatian',
@@ -401,10 +425,23 @@ function renderTable(data, selectedYear) {
             anomalyIcon = `<span class="anomaly-btn" ${onClickAttr} title="Klik untuk info"><i class="fas fa-exclamation"></i></span>`;
         }
 
+        // 2. Pensiun (Dipindah ke sini)
+        let pensionAlert = '';
+        if (item.pensiun.isNear) {
+            const onClickPension = `onclick="Swal.fire({
+                icon: 'info',
+                title: 'Persiapan Pensiun',
+                text: '1 tahun lagi akan pensiun',
+                confirmButtonColor: '#f6c23e'
+            })"`;
+            // Ikon dipindahkan ke samping nama
+            pensionAlert = `<span class="pension-alert-btn" ${onClickPension} title="Masa pensiun dekat"><i class="fas fa-hourglass-half"></i></span>`;
+        }
+
         tr.innerHTML = `
             <td>
                 <div style="font-weight:600; display:flex; align-items:center;">
-                    ${item.nama} ${anomalyIcon}
+                    ${item.nama} ${anomalyIcon} ${pensionAlert}
                 </div>
             </td>
             <td>${item.nip}</td>
@@ -415,6 +452,9 @@ function renderTable(data, selectedYear) {
             <td class="text-center" style="color:#4e73df; font-weight:bold;">${akDisplay}</td>
             <td class="text-center" style="background:#eaffea; color:#1cc88a; font-weight:800; font-size:1.1em;">${item.totalAK}</td>
             <td>${badges}</td>
+            <td style="font-weight:500;">
+                ${item.pensiun.text}
+            </td>
         `;
         tbody.appendChild(tr);
     });

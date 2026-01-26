@@ -8,6 +8,30 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="style-kuota.css">
+    
+    <style>
+        .mini-stats-grid {
+            /* Pastikan grid bisa menampung 4 kolom jika layar cukup lebar */
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .full-width-chart {
+            width: 100%;
+            margin-top: 25px;
+            background: #fff;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+        }
+        .chart-body canvas {
+            width: 100% !important;
+            height: 100% !important;
+        }
+        /* Warna background icon tambahan */
+        .icon-bg.orange { background: rgba(255, 159, 67, 0.15); color: #ff9f43; }
+    </style>
 </head>
 <body>
 
@@ -26,11 +50,11 @@
             <ul class="sidebar-list">
                 <li><a href="kuota.html"><i class="fas fa-table"></i> Kuota Jabatan</a></li>
                 <li><a href="#" class="active"><i class="fas fa-chart-pie"></i> Statistik Kuota</a></li>
-                <li><a href="javascript:void(0)" onclick="alert('Fitur Scan Kepwal akan segera hadir!')"><i class="fas fa-qrcode"></i> Scan Kepwal Terbaru</a></li>
+                <li><a href="https://script.google.com/macros/s/AKfycbykpDdk0JXHd88PqQPrGMcT1RATR50Sl2iS1RYoP8tmwytzZQx9uZ5wQfb6KNfblYDE/exec" target="_blank" class="external-link"><i class="fas fa-qrcode"></i> Scan Kepwal Terbaru</a>
+</li>
             </ul>
-
+            
             <ul class="sidebar-list bottom-menu">
-                <li><a href="/"><i class="fas fa-home"></i> Kembali ke Beranda</a></li>
                 <li><a href="/" class="logout-link"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
             </ul>
         </div>
@@ -48,7 +72,7 @@
                 <label><i class="fas fa-filter"></i> Filter Unit:</label>
                 <select id="unitFilter" onchange="updateStatsView()">
                     <option value="ALL">Semua Unit Kerja (Global)</option>
-                    </select>
+                </select>
             </div>
         </div>
 
@@ -68,6 +92,10 @@
                         <div class="icon-bg purple"><i class="fas fa-briefcase"></i></div>
                         <div><span id="labelCard3">Unit Terpadat</span><h3 id="valCard3">-</h3></div>
                     </div>
+                    <div class="mini-card">
+                        <div class="icon-bg orange"><i class="fas fa-compress-arrows-alt"></i></div>
+                        <div><span id="labelCard4">Unit Terkecil</span><h3 id="valCard4">-</h3></div>
+                    </div>
                 </div>
 
                 <div class="charts-container">
@@ -75,13 +103,22 @@
                         <div class="chart-header">
                             <h4 id="barChartTitle"><i class="fas fa-chart-bar"></i> Distribusi Formasi</h4>
                         </div>
-                        <div class="chart-body"><canvas id="barChart"></canvas></div>
+                        <div class="chart-body" style="height: 300px;"><canvas id="barChart"></canvas></div>
                     </div>
                     <div class="chart-card side-chart">
                         <div class="chart-header">
                             <h4 id="pieChartTitle"><i class="fas fa-chart-pie"></i> Proporsi Data</h4>
                         </div>
-                        <div class="chart-body"><canvas id="pieChart"></canvas></div>
+                        <div class="chart-body" style="height: 300px;"><canvas id="pieChart"></canvas></div>
+                    </div>
+                </div>
+
+                <div class="chart-card full-width-chart">
+                    <div class="chart-header">
+                        <h4><i class="fas fa-list-ol"></i> Top 10 Jabatan dengan Kuota Terbanyak</h4>
+                    </div>
+                    <div class="chart-body" style="height: 350px;">
+                        <canvas id="horizontalBarChart"></canvas>
                     </div>
                 </div>
 

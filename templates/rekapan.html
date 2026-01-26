@@ -44,6 +44,15 @@
             <li><a href="{{ url_for('rekapan') }}" class="active"><i class="fas fa-database"></i> Rekapan Pegawai</a></li>
             <li><a href="{{ url_for('statistik') }}"><i class="fas fa-chart-pie"></i> Dashboard Statistik</a></li>
         </ul>
+         <ul class="sidebar-list" style="border-top: 1px solid #eee; padding-top: 355px; padding-bottom: 20px;">
+    <li>
+        <a href="{{ url_for('static', filename='login.html') }}" style="color: #2563eb; font-weight: 700; background: #eff6ff;">
+            <i class="fas fa-door-open"></i> 
+            <span>Akses Kuota Jabatan</span>
+            <i class="fas fa-arrow-right" style="margin-left: auto; font-size: 0.8rem;"></i>
+        </a>
+    </li>
+</ul>
         <div class="sidebar-footer">
         </div>
     </div> 
@@ -133,6 +142,9 @@
                                     </select>
                                 </div>
                             </th>
+
+                            <th style="min-width: 150px;">Waktu Pensiun</th>
+
                         </tr>
                     </thead>
                     <tbody id="table-body"></tbody>

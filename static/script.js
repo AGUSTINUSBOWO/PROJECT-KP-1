@@ -13,11 +13,11 @@ const TABS = [
 const CAREER_RULES = {
     "terampil": { target: 100, coef: 5, type: "calc" },
     "mahir": { type: "info", msg: "Silahkan cek kriteria Penyelia / Naik ke Ahli" },
-    "penyelia": { type: "stop", msg: "Sudah mentok, silahkan cek kriteria untuk naik ke ahli" },
+    "penyelia": { type: "stop", msg: "Jabatan Puncak, silahkan cek kriteria untuk naik ke ahli" },
     "ahli pertama": { target: 200, coef: 12.5, type: "calc" },
     "ahli muda": { target: 450, coef: 25, type: "calc" },
-    "ahli madya": { target: 850, coef: 37.5, type: "calc" },
-    "ahli utama": { type: "stop", msg: "Jenjang sudah mentok" }
+    "ahli madya": { type: "stop", msg: "Sudah Mencapai Jabatan Puncak" },
+    "ahli utama": { type: "stop", msg: "Sudah Mencapai Jabatan Puncak" }
 };
 
 let cachedData = [];
@@ -29,9 +29,9 @@ let isDataReady = false;
 document.addEventListener('DOMContentLoaded', () => {
     handleWelcomeScreen();
 
-    // Gunakan versi cache baru untuk memaksa refresh data dengan logika baru
-    const localData = localStorage.getItem('pegawaiDataFinalV2');
-    const localTime = localStorage.getItem('pegawaiDataTimeFinalV2');
+    // CACHE V6: Memaksa browser mengambil logika baru
+    const localData = localStorage.getItem('pegawaiDataFinalV6');
+    const localTime = localStorage.getItem('pegawaiDataTimeFinalV6');
     const oneHour = 60 * 60 * 1000;
 
     if (localData && localTime && (Date.now() - localTime < oneHour)) {
@@ -74,6 +74,7 @@ async function fetchAllDataBackground() {
             fetch(`https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json&sheet=${tab}`)
                 .then(res => res.text())
                 .then(text => {
+                    // Membersihkan response JSON dari Google
                     const json = JSON.parse(text.substring(47).slice(0, -2));
                     return { tabName: tab, rows: json.table.rows, cols: json.table.cols };
                 })
@@ -89,12 +90,13 @@ async function fetchAllDataBackground() {
         cachedData = all;
         isDataReady = true;
 
-        localStorage.setItem('pegawaiDataFinalV2', JSON.stringify(all));
-        localStorage.setItem('pegawaiDataTimeFinalV2', Date.now());
+        localStorage.setItem('pegawaiDataFinalV6', JSON.stringify(all));
+        localStorage.setItem('pegawaiDataTimeFinalV6', Date.now());
         hideLoadingStatus();
 
     } catch (err) {
         console.error("Fetch error:", err);
+        alert("Gagal mengambil data. Cek koneksi internet.");
     }
 }
 
@@ -103,10 +105,8 @@ function hideLoadingStatus() {
 }
 
 // ==========================================
-// 4. HELPERS (LOGIKA REKAPAN)
+// 4. HELPERS
 // ==========================================
-
-// Fungsi pembersih angka yang sama dengan fitur Rekapan
 function cleanNumber(val) {
     if (typeof val === 'number') return val;
     if (!val) return 0;
@@ -114,19 +114,16 @@ function cleanNumber(val) {
     let str = String(val).trim();
     if (str === '-' || str === '') return 0;
 
-    // Ganti koma dengan titik (Format Indonesia)
     str = str.replace(',', '.');
-    // Hapus karakter selain angka, titik, minus
     str = str.replace(/[^\d.-]/g, '');
 
     const n = parseFloat(str);
     return isNaN(n) ? 0 : n;
 }
 
-// Format Tanggal untuk Tampilan
 function formatGoogleDate(cell) {
     if (!cell) return '-';
-    // Handle Date(yyyy,m,d) dari JSON Google
+    // Format: Date(2022,0,1)
     if (cell.v && String(cell.v).includes("Date")) {
         const p = String(cell.v).match(/\d+/g);
         if (p && p.length >= 3) {
@@ -134,119 +131,121 @@ function formatGoogleDate(cell) {
                 .toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
         }
     }
-    // Handle string biasa atau formatted value
+    // Format: Text/Formatted
     if (cell.f) return cell.f;
     if (cell.v) return String(cell.v);
     return '-';
 }
 
-// Ambil Tahun (Angka) dari data mentah untuk perhitungan prediksi
 function getYearFromRaw(raw) {
-    if (!raw) return new Date().getFullYear(); // Default tahun ini jika kosong
-    
-    // Jika format Date(2022,0,1)
+    if (!raw) return new Date().getFullYear();
     if (String(raw).includes("Date")) {
         const p = String(raw).match(/\d+/g);
         return p ? parseInt(p[0]) : new Date().getFullYear();
     }
-    
-    // Jika format string tanggal biasa
     const d = new Date(raw);
     if (!isNaN(d.getFullYear())) return d.getFullYear();
-    
     return new Date().getFullYear();
 }
 
 // ==========================================
-// 5. PROCESS SHEET DATA (INTI PERBAIKAN)
+// 5. PROCESS SHEET DATA (LOGIKA UTAMA & PERBAIKAN)
 // ==========================================
 function processSheetData(rows, cols, unitName) {
-    // Helper cari index
-    const findIdx = keys =>
-        cols.findIndex(c => c?.label && keys.some(k => c.label.toLowerCase().includes(k)));
-
-    // 1. Identifikasi Kolom Utama
-    const idxNama = findIdx(['nama']);
-    const idxNip = findIdx(['nip']);
-    const idxJabatan = findIdx(['jabatan', 'jenjang']);
-    const idxPangkat = findIdx(['pangkat']);
-
-    // 2. DETEKSI TMT (Sesuai request: TMT Jabatan Terakhir & TMT Pangkat Terakhir)
-    // Kita cari yang labelnya mengandung "tmt" DAN "jabatan"
-    let idxTMTJabatan = cols.findIndex(c => 
-        c?.label?.toLowerCase().includes('tmt') && 
-        c.label.toLowerCase().includes('jabatan')
-    );
     
-    // Kita cari yang labelnya mengandung "tmt" DAN "pangkat"
-    let idxTMTPangkat = cols.findIndex(c => 
-        c?.label?.toLowerCase().includes('tmt') && 
-        c.label.toLowerCase().includes('pangkat')
-    );
+    // --- FUNGSI PENCARI KOLOM YANG LEBIH AMAN ---
+    const getColIndex = (keywords, defaultIndex) => {
+        // Cari index dimana label mengandung SEMUA keyword
+        const idx = cols.findIndex(c => c?.label && keywords.every(k => c.label.toLowerCase().includes(k)));
+        // Jika ketemu, kembalikan indexnya. Jika tidak, kembalikan defaultIndex (Hardcode)
+        return idx > -1 ? idx : defaultIndex;
+    };
 
-    // 3. DETEKSI KOLOM TOTAL AK (Logika Rekapan)
-    // Cari kolom yang mengandung "ak" DAN ("integrasi" ATAU tahun 4 digit)
-    // Hindari kolom "target", "minimal", "jumlah", "total" (agar tidak double count jika ada kolom summary manual)
+    // 1. Identifikasi Index Kolom Penting
+    const idxNama = getColIndex(['nama'], 1); // Default ke kolom B (1) jika label hilang
+    const idxNip = getColIndex(['nip'], 2);  // Default ke kolom C (2)
+    
+    // PERBAIKAN JABATAN: Cari 'jabatan' ATAU 'jenjang'. Jika gagal, coba kolom E (4)
+    let idxJabatan = cols.findIndex(c => c?.label && (c.label.toLowerCase().includes('jabatan') || c.label.toLowerCase().includes('jenjang')));
+    if (idxJabatan === -1) idxJabatan = 4; // Fallback ke index 4 jika tidak ketemu labelnya
+
+    const idxPangkat = getColIndex(['pangkat'], 5); 
+
+    // 2. DETEKSI TMT (SESUAI REQUEST: KOLOM I=8, J=9)
+    // Logika: Cari label dulu. Jika labelnya aneh/hilang, LANGSUNG PAKAI 8 dan 9.
+    const idxTMTJabatan = getColIndex(['tmt', 'jab'], 8); // Priority search, Fallback Index 8 (Kolom I)
+    const idxTMTPangkat = getColIndex(['tmt', 'pang'], 9); // Priority search, Fallback Index 9 (Kolom J)
+
+    // 3. DETEKSI KOLOM AK (Angka Kredit)
     const akIndexes = [];
     cols.forEach((c, i) => {
         const label = c?.label?.toLowerCase() || '';
-        
         const isAK = label.includes('ak') || label.includes('angka kredit');
-        const isYearOrIntegrasi = label.includes('integrasi') || /\d{4}/.test(label); // Regex 4 digit tahun
+        const isYear = label.includes('integrasi') || /\d{4}/.test(label);
         const isExcluded = label.includes('target') || label.includes('syarat') || label.includes('min') || label.includes('total') || label.includes('jumlah');
 
-        if (isAK && isYearOrIntegrasi && !isExcluded) {
+        if (isAK && isYear && !isExcluded) {
             akIndexes.push(i);
         }
     });
 
     return rows.map(row => {
         const c = row.c;
+        // Skip baris jika kosong atau Nama tidak ada
         if (!c || !c[idxNama]) return null;
 
-        // A. HITUNG TOTAL AK (Looping kolom yang terdeteksi)
+        // Ambil Nama & NIP
+        const nama = c[idxNama]?.v || '';
+        if (!nama || nama.toLowerCase().includes('nama pegawai')) return null; // Skip header row yg lolos
+
+        const nipVal = c[idxNip]?.v ? String(c[idxNip].v).replace(/'/g, '') : '-';
+
+        // PERBAIKAN ERROR JABATAN:
+        // Gunakan safety check (?.) agar tidak crash jika kolom jabatan undefined
+        let rawJabatan = c[idxJabatan]?.v || ''; 
+        if (typeof rawJabatan !== 'string') rawJabatan = String(rawJabatan);
+        
+        const jabatan = rawJabatan.toLowerCase();
+        const pangkat = c[idxPangkat]?.v || '-';
+
+        // Hitung Total AK
         let totalAK = 0;
         akIndexes.forEach(i => {
-            // Ambil value (v) atau formatted (f)
             const rawVal = c[i]?.v ?? c[i]?.f;
-            // Bersihkan dengan cleanNumber (koma jadi titik)
             totalAK += cleanNumber(rawVal);
         });
 
-        // B. AMBIL DATA TMT
-        const cellTMTJab = idxTMTJabatan > -1 ? c[idxTMTJabatan] : null;
-        const cellTMTPang = idxTMTPangkat > -1 ? c[idxTMTPangkat] : null;
+        // AMBIL DATA TMT (Dengan Index yang sudah dipastikan di atas)
+        const cellTMTJab = c[idxTMTJabatan] || null;
+        const cellTMTPang = c[idxTMTPangkat] || null;
 
         return {
-            nama: c[idxNama]?.v || '',
-            nip: c[idxNip]?.v ? String(c[idxNip].v).replace(/'/g, '') : '-',
-            jabatan: (c[idxJabatan]?.v || '').toLowerCase(), // Lowercase untuk matching rules
-            pangkat: c[idxPangkat]?.v || '-',
-            
-            // Simpan Total AK yang sudah dihitung
+            nama: nama,
+            nip: nipVal,
+            jabatan: jabatan,
+            pangkat: pangkat,
             ak: totalAK, 
-            
             unit: unitName,
 
-            // Simpan Data TMT (Raw untuk hitung, Display untuk UI)
+            // Data TMT
             tmtJabatanRaw: cellTMTJab?.v,
             tmtPangkatRaw: cellTMTPang?.v,
             tmtJabatanDisplay: formatGoogleDate(cellTMTJab),
             tmtPangkatDisplay: formatGoogleDate(cellTMTPang),
 
-            searchKey: ((c[idxNama]?.v || '') + ' ' + (c[idxNip]?.v || '')).toLowerCase()
+            searchKey: (nama + ' ' + nipVal).toLowerCase()
         };
-    }).filter(item => item && item.nama !== '');
+    }).filter(item => item); // Hapus null items
 }
 
 // ==========================================
-// 6. PREDIKSI SISTEM (OUTPUT TAHUN)
+// 6. PREDIKSI SISTEM
 // ==========================================
 function hitungPrediksiSistem(d) {
-    const jabatanRaw = d.jabatan; // Sudah lowercase dari processSheetData
+    const jabatanRaw = d.jabatan; 
     let rule = null;
 
-    // Matching Jabatan dengan Rules
+    // Matching Rule (Urutan penting agar 'ahli muda' tidak tertukar 'ahli madya' dll)
     if (jabatanRaw.includes('terampil')) rule = CAREER_RULES['terampil'];
     else if (jabatanRaw.includes('mahir')) rule = CAREER_RULES['mahir'];
     else if (jabatanRaw.includes('penyelia')) rule = CAREER_RULES['penyelia'];
@@ -255,53 +254,40 @@ function hitungPrediksiSistem(d) {
     else if (jabatanRaw.includes('madya')) rule = CAREER_RULES['ahli madya'];
     else if (jabatanRaw.includes('utama')) rule = CAREER_RULES['ahli utama'];
 
-    // Jika Jabatan Tidak Dikenali
+    // Jika Jabatan kosong atau tidak dikenali
     if (!rule) {
         return { 
             status: 'info', 
-            jabatanText: "Jabatan tidak terdaftar", 
+            jabatanText: d.jabatan ? "Jabatan tidak terdaftar" : "Data Jabatan Kosong", 
             pangkatText: "-" 
         };
     }
 
-    // Jika Status Mentok / Info Only
     if (rule.type === 'stop' || rule.type === 'info') {
-        return {
-            status: rule.type,
-            jabatanText: rule.msg,
-            pangkatText: "-"
-        };
+        return { status: rule.type, jabatanText: rule.msg, pangkatText: "-" };
     }
 
-    // --- KALKULASI TAHUN (Untuk tipe 'calc') ---
     const thisYear = new Date().getFullYear();
-
-    // 1. Syarat Waktu (TMT + 2 Tahun)
     const yearTMTJab = getYearFromRaw(d.tmtJabatanRaw);
     const yearTMTPang = getYearFromRaw(d.tmtPangkatRaw);
 
     const readyYearJabByTime = yearTMTJab + 2;
     const readyYearPangByTime = yearTMTPang + 2;
 
-    // 2. Syarat Angka Kredit (Total AK >= Target)
     const targetAK = rule.target;
     const currentAK = d.ak;
     const deficit = targetAK - currentAK;
-    const coef = rule.coef; // Koefisien per tahun
+    const coef = rule.coef;
 
     let yearsToCollectAK = 0;
     if (deficit > 0) {
-        // Hitung berapa tahun lagi untuk menutup defisit
         yearsToCollectAK = Math.ceil(deficit / coef);
     }
     const readyYearByAK = thisYear + yearsToCollectAK;
 
-    // 3. Kesimpulan Tahun (Ambil yang paling lama)
-    // User baru bisa naik jika Syarat Waktu DAN Syarat AK terpenuhi
     let finalYearJabatan = Math.max(readyYearJabByTime, readyYearByAK);
     let finalYearPangkat = Math.max(readyYearPangByTime, readyYearByAK);
 
-    // Format Tampilan
     const formatYear = (y) => y <= thisYear ? `${thisYear} (Siap)` : `Tahun ${y}`;
 
     return {
@@ -315,7 +301,7 @@ function hitungPrediksiSistem(d) {
 // 7. SEARCH & UI
 // ==========================================
 function searchEmployee() {
-    if (!isDataReady) return alert("Data sedang dimuat...");
+    if (!isDataReady) return alert("Data sedang dimuat... Tunggu sebentar.");
 
     const input = document.getElementById('searchInput').value.toLowerCase().trim();
     if (!input) return alert("Masukkan Nama atau NIP");
@@ -326,31 +312,35 @@ function searchEmployee() {
     setTimeout(() => {
         const d = cachedData.find(e => e.searchKey.includes(input));
         document.getElementById('loadingView')?.classList.add('hidden');
-        d ? tampilkanHasil(d) : (alert("Pegawai tidak ditemukan"), resetView());
+        
+        if (d) {
+            tampilkanHasil(d);
+        } else {
+            alert("Pegawai tidak ditemukan.");
+            resetView();
+        }
     }, 800);
 }
 
 function tampilkanHasil(d) {
-    // Isi Data Dasar
     document.getElementById('resNama').innerText = d.nama;
     document.getElementById('resNip').innerText = d.nip;
     document.getElementById('resUnit').innerText = d.unit;
-    // Tampilkan Jabatan (Kapitalisasi huruf pertama)
-    document.getElementById('resJabatan').innerText = d.jabatan.replace(/\b\w/g, l => l.toUpperCase());
-    document.getElementById('resPangkat').innerText = d.pangkat;
     
-    // Tampilkan Total AK (Pembulatan 3 desimal untuk presisi, ditampilkan dengan format Indo)
+    // Tampilkan Jabatan dengan huruf kapital di awal kata
+    const displayJabatan = d.jabatan.length > 1 
+        ? d.jabatan.replace(/\b\w/g, l => l.toUpperCase()) 
+        : '-';
+    document.getElementById('resJabatan').innerText = displayJabatan;
+    
+    document.getElementById('resPangkat').innerText = d.pangkat;
     document.getElementById('resAK').innerText = d.ak.toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 3 });
 
-    // Tampilkan TMT (Diambil dari spreadsheet)
+    // TAMPILKAN TMT (HASIL DARI KOLOM I & J)
     document.getElementById('resTMTJabatan').innerText = d.tmtJabatanDisplay;
     document.getElementById('resTMTPangkat').innerText = d.tmtPangkatDisplay;
 
-    // Tampilkan Hasil Prediksi
     const prediksi = hitungPrediksiSistem(d);
-    
-    // Kita cari container hasil prediksi, atau buat jika belum ada (sesuai struktur HTML Anda)
-    // Asumsi di HTML ada elemen dengan ID 'resEstimasi'
     const estEl = document.getElementById('resEstimasi');
     
     if (prediksi.status === 'stop' || prediksi.status === 'info') {
