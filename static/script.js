@@ -1,6 +1,3 @@
-// ==========================================
-// 1. CONFIG & RULES
-// ==========================================
 const SPREADSHEET_ID = '15WY6r-LWkxmBn0agPJdM7oEgkOUHZghNHxfGWATGNHM';
 
 const TABS = [
@@ -9,7 +6,6 @@ const TABS = [
     "Labkes", "DINKES", "RSUD", "RSP"
 ];
 
-// ATURAN PENGHITUNGAN TAHUN PREDIKSI
 const CAREER_RULES = {
     "terampil": { target: 100, coef: 5, type: "calc" },
     "mahir": { type: "info", msg: "Silahkan cek kriteria Penyelia / Naik ke Ahli" },
@@ -22,14 +18,8 @@ const CAREER_RULES = {
 
 let cachedData = [];
 let isDataReady = false;
-
-// ==========================================
-// 2. INIT
-// ==========================================
 document.addEventListener('DOMContentLoaded', () => {
     handleWelcomeScreen();
-
-    // CACHE V6: Memaksa browser mengambil logika baru
     const localData = localStorage.getItem('pegawaiDataFinalV6');
     const localTime = localStorage.getItem('pegawaiDataTimeFinalV6');
     const oneHour = 60 * 60 * 1000;
@@ -63,9 +53,6 @@ function handleWelcomeScreen() {
     }, 2500);
 }
 
-// ==========================================
-// 3. FETCH DATA
-// ==========================================
 async function fetchAllDataBackground() {
     document.getElementById('loadingStatus')?.classList.remove('hidden');
 
@@ -74,7 +61,6 @@ async function fetchAllDataBackground() {
             fetch(`https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json&sheet=${tab}`)
                 .then(res => res.text())
                 .then(text => {
-                    // Membersihkan response JSON dari Google
                     const json = JSON.parse(text.substring(47).slice(0, -2));
                     return { tabName: tab, rows: json.table.rows, cols: json.table.cols };
                 })
@@ -104,9 +90,6 @@ function hideLoadingStatus() {
     document.getElementById('loadingStatus')?.classList.add('hidden');
 }
 
-// ==========================================
-// 4. HELPERS
-// ==========================================
 function cleanNumber(val) {
     if (typeof val === 'number') return val;
     if (!val) return 0;
@@ -123,7 +106,6 @@ function cleanNumber(val) {
 
 function formatGoogleDate(cell) {
     if (!cell) return '-';
-    // Format: Date(2022,0,1)
     if (cell.v && String(cell.v).includes("Date")) {
         const p = String(cell.v).match(/\d+/g);
         if (p && p.length >= 3) {
@@ -131,7 +113,6 @@ function formatGoogleDate(cell) {
                 .toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
         }
     }
-    // Format: Text/Formatted
     if (cell.f) return cell.f;
     if (cell.v) return String(cell.v);
     return '-';
@@ -147,36 +128,19 @@ function getYearFromRaw(raw) {
     if (!isNaN(d.getFullYear())) return d.getFullYear();
     return new Date().getFullYear();
 }
-
-// ==========================================
-// 5. PROCESS SHEET DATA (LOGIKA UTAMA & PERBAIKAN)
-// ==========================================
 function processSheetData(rows, cols, unitName) {
-    
-    // --- FUNGSI PENCARI KOLOM YANG LEBIH AMAN ---
     const getColIndex = (keywords, defaultIndex) => {
-        // Cari index dimana label mengandung SEMUA keyword
         const idx = cols.findIndex(c => c?.label && keywords.every(k => c.label.toLowerCase().includes(k)));
-        // Jika ketemu, kembalikan indexnya. Jika tidak, kembalikan defaultIndex (Hardcode)
         return idx > -1 ? idx : defaultIndex;
     };
-
-    // 1. Identifikasi Index Kolom Penting
-    const idxNama = getColIndex(['nama'], 1); // Default ke kolom B (1) jika label hilang
-    const idxNip = getColIndex(['nip'], 2);  // Default ke kolom C (2)
-    
-    // PERBAIKAN JABATAN: Cari 'jabatan' ATAU 'jenjang'. Jika gagal, coba kolom E (4)
+    const idxNama = getColIndex(['nama'], 1); 
+    const idxNip = getColIndex(['nip'], 2);  
     let idxJabatan = cols.findIndex(c => c?.label && (c.label.toLowerCase().includes('jabatan') || c.label.toLowerCase().includes('jenjang')));
-    if (idxJabatan === -1) idxJabatan = 4; // Fallback ke index 4 jika tidak ketemu labelnya
+    if (idxJabatan === -1) idxJabatan = 4; 
 
     const idxPangkat = getColIndex(['pangkat'], 5); 
-
-    // 2. DETEKSI TMT (SESUAI REQUEST: KOLOM I=8, J=9)
-    // Logika: Cari label dulu. Jika labelnya aneh/hilang, LANGSUNG PAKAI 8 dan 9.
-    const idxTMTJabatan = getColIndex(['tmt', 'jab'], 8); // Priority search, Fallback Index 8 (Kolom I)
-    const idxTMTPangkat = getColIndex(['tmt', 'pang'], 9); // Priority search, Fallback Index 9 (Kolom J)
-
-    // 3. DETEKSI KOLOM AK (Angka Kredit)
+    const idxTMTJabatan = getColIndex(['tmt', 'jab'], 8); 
+    const idxTMTPangkat = getColIndex(['tmt', 'pang'], 9); 
     const akIndexes = [];
     cols.forEach((c, i) => {
         const label = c?.label?.toLowerCase() || '';
@@ -191,31 +155,23 @@ function processSheetData(rows, cols, unitName) {
 
     return rows.map(row => {
         const c = row.c;
-        // Skip baris jika kosong atau Nama tidak ada
         if (!c || !c[idxNama]) return null;
-
-        // Ambil Nama & NIP
         const nama = c[idxNama]?.v || '';
-        if (!nama || nama.toLowerCase().includes('nama pegawai')) return null; // Skip header row yg lolos
+        if (!nama || nama.toLowerCase().includes('nama pegawai')) return null; 
 
         const nipVal = c[idxNip]?.v ? String(c[idxNip].v).replace(/'/g, '') : '-';
-
-        // PERBAIKAN ERROR JABATAN:
-        // Gunakan safety check (?.) agar tidak crash jika kolom jabatan undefined
         let rawJabatan = c[idxJabatan]?.v || ''; 
         if (typeof rawJabatan !== 'string') rawJabatan = String(rawJabatan);
         
         const jabatan = rawJabatan.toLowerCase();
         const pangkat = c[idxPangkat]?.v || '-';
 
-        // Hitung Total AK
         let totalAK = 0;
         akIndexes.forEach(i => {
             const rawVal = c[i]?.v ?? c[i]?.f;
             totalAK += cleanNumber(rawVal);
         });
 
-        // AMBIL DATA TMT (Dengan Index yang sudah dipastikan di atas)
         const cellTMTJab = c[idxTMTJabatan] || null;
         const cellTMTPang = c[idxTMTPangkat] || null;
 
@@ -226,8 +182,6 @@ function processSheetData(rows, cols, unitName) {
             pangkat: pangkat,
             ak: totalAK, 
             unit: unitName,
-
-            // Data TMT
             tmtJabatanRaw: cellTMTJab?.v,
             tmtPangkatRaw: cellTMTPang?.v,
             tmtJabatanDisplay: formatGoogleDate(cellTMTJab),
@@ -235,17 +189,12 @@ function processSheetData(rows, cols, unitName) {
 
             searchKey: (nama + ' ' + nipVal).toLowerCase()
         };
-    }).filter(item => item); // Hapus null items
+    }).filter(item => item); 
 }
 
-// ==========================================
-// 6. PREDIKSI SISTEM
-// ==========================================
 function hitungPrediksiSistem(d) {
     const jabatanRaw = d.jabatan; 
     let rule = null;
-
-    // Matching Rule (Urutan penting agar 'ahli muda' tidak tertukar 'ahli madya' dll)
     if (jabatanRaw.includes('terampil')) rule = CAREER_RULES['terampil'];
     else if (jabatanRaw.includes('mahir')) rule = CAREER_RULES['mahir'];
     else if (jabatanRaw.includes('penyelia')) rule = CAREER_RULES['penyelia'];
@@ -253,8 +202,6 @@ function hitungPrediksiSistem(d) {
     else if (jabatanRaw.includes('muda')) rule = CAREER_RULES['ahli muda'];
     else if (jabatanRaw.includes('madya')) rule = CAREER_RULES['ahli madya'];
     else if (jabatanRaw.includes('utama')) rule = CAREER_RULES['ahli utama'];
-
-    // Jika Jabatan kosong atau tidak dikenali
     if (!rule) {
         return { 
             status: 'info', 
@@ -297,9 +244,6 @@ function hitungPrediksiSistem(d) {
     };
 }
 
-// ==========================================
-// 7. SEARCH & UI
-// ==========================================
 function searchEmployee() {
     if (!isDataReady) return alert("Data sedang dimuat... Tunggu sebentar.");
 
@@ -326,8 +270,6 @@ function tampilkanHasil(d) {
     document.getElementById('resNama').innerText = d.nama;
     document.getElementById('resNip').innerText = d.nip;
     document.getElementById('resUnit').innerText = d.unit;
-    
-    // Tampilkan Jabatan dengan huruf kapital di awal kata
     const displayJabatan = d.jabatan.length > 1 
         ? d.jabatan.replace(/\b\w/g, l => l.toUpperCase()) 
         : '-';
@@ -335,8 +277,6 @@ function tampilkanHasil(d) {
     
     document.getElementById('resPangkat').innerText = d.pangkat;
     document.getElementById('resAK').innerText = d.ak.toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 3 });
-
-    // TAMPILKAN TMT (HASIL DARI KOLOM I & J)
     document.getElementById('resTMTJabatan').innerText = d.tmtJabatanDisplay;
     document.getElementById('resTMTPangkat').innerText = d.tmtPangkatDisplay;
 

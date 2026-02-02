@@ -1,4 +1,3 @@
-// Konfigurasi Spreadsheet
 const SPREADSHEET_ID = '15WY6r-LWkxmBn0agPJdM7oEgkOUHZghNHxfGWATGNHM';
 const SHEET_TABS = [
     "DN1", "DN2", "GK1", "GK2", "GM", "GT", "JT", "KG1", "KG2", 
@@ -8,60 +7,42 @@ const SHEET_TABS = [
 
 let ALL_DATA = [];
 let DETECTED_YEARS = [];
-let charts = {}; // Menyimpan instance chart
+let charts = {}; 
 
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. Jalankan Animasi Intro Splash Screen
     startSplashScreenSequence();
-
-    // 2. Setup Event Listeners
     setupEventListeners();
 });
 
 function setupEventListeners() {
-    // Event Dropdown Tahun Global
     document.getElementById('yearFilter').addEventListener('change', function() {
         const selectedYear = parseInt(this.value);
         updateDynamicCharts(selectedYear);
     });
-
-    // Event Dropdown Filter Unit (Top 5)
     document.getElementById('unitFilterTop5').addEventListener('change', function() {
         const selectedYear = parseInt(document.getElementById('yearFilter').value);
         renderTop5(selectedYear);
     });
 }
 
-// ... (Kode lain tetap)
-
-// UPDATE: Samakan nama fungsi dengan rekapan
 function toggleSidebar() {
     const sidebar = document.getElementById('sidebar');
     const overlay = document.querySelector('.sidebar-overlay');
     
-    // Toggle class active
     sidebar.classList.toggle('active');
     overlay.classList.toggle('active');
 }
 
-// ... (Sisa kode tetap)
-
-// === LOGIKA SPLASH SCREEN & DATA FETCHING ===
 function startSplashScreenSequence() {
     const splashText = document.getElementById('splash-text');
-    
-    // Tahap 1: Tampilkan Intro (Sudah via CSS)
-    
-    // Tahap 2: Setelah 1.5 detik, ubah teks jadi "Sinkronisasi..." dan mulai fetch data
     setTimeout(() => {
         splashText.innerText = "Sinkronisasi Data Pegawai...";
-        fetchAllData(); // Mulai ambil data
+        fetchAllData(); 
     }, 1500);
 }
 
 async function fetchAllData() {
     try {
-        // Ambil data dari semua tab secara paralel
         let promises = SHEET_TABS.map(sheetName => {
             const url = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheetName)}`;
             return fetch(url)
@@ -74,26 +55,16 @@ async function fetchAllData() {
 
         const results = await Promise.all(promises);
         ALL_DATA = results.flat();
-        
-        // Hapus data kosong
         ALL_DATA = ALL_DATA.filter(item => item.nama !== '-' && item.nama !== '');
-
-        // Setup UI Filters
         setupYearFilter();
         setupTop5Filter();
-        
-        // Update Info Data
         document.getElementById('totalDataInfo').innerText = `Total: ${ALL_DATA.length} Pegawai dari ${SHEET_TABS.length} Unit Kerja`;
-
-        // Render Grafik Awal
         const latestYear = DETECTED_YEARS[DETECTED_YEARS.length - 1];
         updateDynamicCharts(latestYear);
         renderTrendChart(); 
-
-        // TAHAP 3: Data Selesai, Sembunyikan Splash Screen
         setTimeout(() => {
             document.getElementById('splash-screen').classList.add('hidden');
-        }, 1000); // Beri jeda sedikit agar user melihat teks "Selesai" jika perlu
+        }, 1000); 
 
     } catch (error) {
         console.error("Error:", error);
@@ -101,8 +72,6 @@ async function fetchAllData() {
         alert("Gagal memuat data. Cek koneksi internet anda.");
     }
 }
-
-// === PARSING DATA ===
 function normalizeData(rows, cols, sheetName) {
     const colIdx = {
         nama: findCol(cols, ["nama", "name"]),
@@ -146,7 +115,6 @@ function normalizeData(rows, cols, sheetName) {
     }).filter(i => i !== null);
 }
 
-// === SETUP UI HELPERS ===
 function setupYearFilter() {
     DETECTED_YEARS.sort((a, b) => a - b);
     const select = document.getElementById('yearFilter');
@@ -178,9 +146,6 @@ function updateDynamicCharts(year) {
     renderJabatanChart();
 }
 
-// === CHART FUNCTIONS ===
-
-// 1. TOP 5 CHART
 function renderTop5(year) {
     const ctx = document.getElementById("topFiveChart").getContext("2d");
     const unitFilter = document.getElementById('unitFilterTop5').value;
@@ -219,7 +184,6 @@ function renderTop5(year) {
     });
 }
 
-// 2. UNIT CHART
 function renderUnitChart(year) {
     const ctx = document.getElementById("unitChart").getContext("2d");
 
@@ -255,7 +219,6 @@ function renderUnitChart(year) {
     });
 }
 
-// 3. JABATAN CHART
 function renderJabatanChart() {
     const ctx = document.getElementById("jabatanChart").getContext("2d");
 
@@ -293,7 +256,6 @@ function renderJabatanChart() {
     });
 }
 
-// 4. TREND CHART
 function renderTrendChart() {
     const ctx = document.getElementById("trendChart").getContext("2d");
 

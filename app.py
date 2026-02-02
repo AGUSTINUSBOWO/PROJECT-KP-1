@@ -7,10 +7,8 @@ import re
 from datetime import datetime
 
 app = Flask(__name__)
-
-# ================= KONFIGURASI =================
 SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRyCvFcDxZgI0E4oTeGjf3JUxb9UAAXrObd39qnU-CDhEMhVjkLfCvuz1nrAhtaiWjLNbA4ModnEEtp/pub?output=xlsx"
-# ===============================================
+
 
 def bersihkan_nama_kolom(daftar_kolom):
     """Membersihkan header kolom."""
@@ -57,9 +55,7 @@ def bersihkan_angka_kredit(nilai):
     try:
         if pd.isna(nilai) or nilai == '-' or str(nilai).strip() == '':
             return 0.0
-        # Hapus karakter non-numerik kecuali titik dan koma
         clean = re.sub(r'[^\d.,]', '', str(nilai))
-        # Ganti koma dengan titik (format Indonesia ke US)
         clean = clean.replace(',', '.')
         return float(clean)
     except:
@@ -82,19 +78,13 @@ def get_merged_data():
             raw_header = df_raw.iloc[idx_header].tolist()
             df = df_raw.iloc[idx_header+1:].copy()
             df.columns = bersihkan_nama_kolom(raw_header)
-
-            # 1. Identifikasi Kolom Dasar
             col_nama = cari_nama_kolom_asli(df.columns, ['nama'])
             col_nip = cari_nama_kolom_asli(df.columns, ['nip'])
             col_tmt = cari_nama_kolom_asli(df.columns, ['tmt', 'tanggal mulai'])
             col_pangkat = cari_nama_kolom_asli(df.columns, ['pangkat', 'golongan'])
             col_jabatan = cari_nama_kolom_asli(df.columns, ['jabatan', 'posisi'])
-            
-            # 2. Identifikasi Kolom Total AK (Untuk Halaman Prediksi)
-            # Mencari kolom AK umum untuk ditampilkan di kartu hasil pencarian
             col_ak = cari_nama_kolom_asli(df.columns, ['total', 'jumlah ak', 'total ak', 'angka kredit'])
 
-            # Logika Unit Kerja (Tetap)
             sheet_lower = str(sheet_name).lower()
             if any(x in sheet_lower for x in ['dinkes', 'dinas']):
                 df['FIX_UNIT'] = "Dinas Kesehatan"
@@ -116,8 +106,6 @@ def get_merged_data():
                         df['FIX_UNIT'] = str(sheet_name)
                 except:
                     df['FIX_UNIT'] = str(sheet_name)
-
-            # 3. Rename & Mapping
             rename_map = {}
             if col_nama: rename_map[col_nama] = 'FIX_NAMA'
             if col_nip: rename_map[col_nip] = 'FIX_NIP'
@@ -128,15 +116,10 @@ def get_merged_data():
             
             df = df.rename(columns=rename_map)
             df = df.astype(str)
-            
-            # Bersihkan NIP
             if 'FIX_NIP' in df.columns:
                 df['FIX_NIP'] = df['FIX_NIP'].str.replace(r'[^\d]', '', regex=True)
-            
-            # Bersihkan AK (Handle kolom kosong jika tidak ditemukan)
             if 'FIX_AK' not in df.columns:
                 df['FIX_AK'] = "0"
-            
             all_data.append(df)
             
         if all_data:
@@ -155,11 +138,7 @@ def hitung_prediksi(tmt_string):
         
         tmt_date = pd.to_datetime(tmt_string, dayfirst=True, errors='coerce')
         if pd.isna(tmt_date): return "-"
-        
-        # Rumus: Tambah 4 Tahun untuk Reguler
         prediksi_date = tmt_date + pd.DateOffset(years=4)
-        
-        # Format Indonesia
         bulan_indo = {
             'January': 'Januari', 'February': 'Februari', 'March': 'Maret',
             'April': 'April', 'May': 'Mei', 'June': 'Juni',
@@ -207,7 +186,6 @@ def index():
                         if unit_final.lower() in ['nan', 'none', '', 'nat']:
                             unit_final = "Unit Kerja Tidak Terdeteksi"
                         
-                        # Ambil & Format AK
                         raw_ak = data_row.get('FIX_AK', '0')
                         clean_ak = bersihkan_angka_kredit(raw_ak)
 
@@ -218,7 +196,7 @@ def index():
                             'pangkat': data_row.get('FIX_PANGKAT', '-'),
                             'tmt': tmt_sekarang,
                             'unit': unit_final,
-                            'total_ak': f"{clean_ak:.3f}" # Format 3 desimal
+                            'total_ak': f"{clean_ak:.3f}" 
                         }
                     else:
                         error = "Data pegawai tidak ditemukan."
@@ -247,5 +225,9 @@ def kuota():
 def statistik_kuota():
     return render_template('statistik-kuota.html')
 
+@app.route("/")
+def home():
+    return "Tes dari HP"
+
 if __name__ == "__main__":
-    app.run(host="127.0.0.1", port=5001, debug=True)
+    app.run(host="0.0.0.0", port=5001, debug=True)

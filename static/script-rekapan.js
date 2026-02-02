@@ -1,4 +1,3 @@
-// ================= KONFIGURASI =================
 const SPREADSHEET_ID = '15WY6r-LWkxmBn0agPJdM7oEgkOUHZghNHxfGWATGNHM';
 const SHEET_TABS = [
     "DN1", "DN2", "GK1", "GK2", "GM", "GT", "JT", "KG1", "KG2", 
@@ -6,7 +5,6 @@ const SHEET_TABS = [
     "Labkes", "DINKES", "RSUD", "RSP"
 ];
 
-// ================= REFERENSI DATA STANDAR ASN (LENGKAP) =================
 const PANGKAT_REF = [
     { code: "II/a", name: "Pengatur Muda", level: 5 },
     { code: "II/b", name: "Pengatur Muda Tk. I", level: 6 },
@@ -36,8 +34,6 @@ const JABATAN_RULES = {
 
 let CURRENT_SHEET_DATA = [];
 let DETECTED_YEARS = [];
-
-// ================= MENU & SPLASH LOGIC =================
 function toggleSidebar() {
     const sidebar = document.getElementById('sidebar');
     const overlay = document.querySelector('.sidebar-overlay');
@@ -67,7 +63,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 3000); 
 });
 
-// ================= LOAD DATA =================
 async function loadSheetData(sheetName) {
     const loading = document.getElementById('loading');
     loading.classList.remove('hidden');
@@ -103,7 +98,6 @@ async function loadSheetData(sheetName) {
     }
 }
 
-// ================= NORMALISASI DATA =================
 function normalizeData(rows, cols, sheetName) {
     const getIdx = (key) => cols.findIndex(c => c && c.label && c.label.toLowerCase().includes(key));
     
@@ -204,7 +198,6 @@ function normalizeData(rows, cols, sheetName) {
     return { data, years: foundYears };
 }
 
-// ================= DROPDOWN MANAGEMENT =================
 function populatePangkatDropdown() {
     const select = document.getElementById('filterPangkat');
     select.innerHTML = '<option value="">Semua Pangkat</option>';
@@ -236,7 +229,6 @@ function updateYearDropdown(years) {
     years.forEach(y => sel.add(new Option(y, y)));
 }
 
-// ================= LOGIKA ANOMALI & STANDARISASI =================
 function standardizePangkat(raw) {
     if (!raw || raw === '-') return '-';
     let r = raw.trim(); 
@@ -353,7 +345,6 @@ function checkTimeDiff(tmtStr) {
     return false;
 }
 
-// ================= FILTER & RENDER =================
 function applyLogicAndRender() {
     const searchVal = document.getElementById('globalSearch').value.toLowerCase();
     const fJab = document.getElementById('filterJabatan').value.toLowerCase();
@@ -410,10 +401,7 @@ function renderTable(data, selectedYear) {
         } else {
             pangkatLabel = `${item.pangkat}<br><span style="font-size:10px; color:#999;">${item.rawPangkat}</span>`;
         }
-
-        // --- RENDER ICON ALERT (Anomali & Pensiun) ---
         
-        // 1. Anomali
         let anomalyIcon = '';
         if (item.anomali) {
             const onClickAttr = `onclick="Swal.fire({
@@ -425,7 +413,6 @@ function renderTable(data, selectedYear) {
             anomalyIcon = `<span class="anomaly-btn" ${onClickAttr} title="Klik untuk info"><i class="fas fa-exclamation"></i></span>`;
         }
 
-        // 2. Pensiun (Dipindah ke sini)
         let pensionAlert = '';
         if (item.pensiun.isNear) {
             const onClickPension = `onclick="Swal.fire({
@@ -434,7 +421,6 @@ function renderTable(data, selectedYear) {
                 text: '1 tahun lagi akan pensiun',
                 confirmButtonColor: '#f6c23e'
             })"`;
-            // Ikon dipindahkan ke samping nama
             pensionAlert = `<span class="pension-alert-btn" ${onClickPension} title="Masa pensiun dekat"><i class="fas fa-hourglass-half"></i></span>`;
         }
 
