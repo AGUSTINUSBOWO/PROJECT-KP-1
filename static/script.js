@@ -277,6 +277,7 @@ function tampilkanHasil(d) {
     
     document.getElementById('resPangkat').innerText = d.pangkat;
     document.getElementById('resAK').innerText = d.ak.toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 3 });
+
     document.getElementById('resTMTJabatan').innerText = d.tmtJabatanDisplay;
     document.getElementById('resTMTPangkat').innerText = d.tmtPangkatDisplay;
 

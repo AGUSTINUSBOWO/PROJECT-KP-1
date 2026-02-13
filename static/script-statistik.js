@@ -299,5 +299,3 @@ function findCol(cols, keys) {
 function getVal(c, idx) {
     return (idx !== -1 && c[idx]) ? (c[idx].v || c[idx].f || '-') : '-';
 }
-
-
